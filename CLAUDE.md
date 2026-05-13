@@ -14,14 +14,20 @@ The repo is not production-ready. It is a thin mobile client that assumes an exi
 - Runtime: Expo SDK 54 + React Native 0.81 + React 19
 - Language: TypeScript
 - Package manager: npm (`package-lock.json` present)
-- Entry point: [index.ts](C:/Users/scgro/Desktop/Webapp training project/SCCRMMVP/index.ts)
-- Main application surface: [App.tsx](C:/Users/scgro/Desktop/Webapp training project/SCCRMMVP/App.tsx)
-- Config/env loader: [src/config.ts](C:/Users/scgro/Desktop/Webapp training project/SCCRMMVP/src/config.ts)
-- Generic API client: [src/lib/api.ts](C:/Users/scgro/Desktop/Webapp training project/SCCRMMVP/src/lib/api.ts)
-- OAuth helpers: [src/lib/auth.ts](C:/Users/scgro/Desktop/Webapp training project/SCCRMMVP/src/lib/auth.ts)
-- Shared frontend types: [src/types.ts](C:/Users/scgro/Desktop/Webapp training project/SCCRMMVP/src/types.ts)
+- Entry point: `index.ts`
+- Main application surface: `App.tsx` — mounts providers, owns `mode`/`busy`/`message`, routes to screens
+- Config/env loader: `src/config.ts`
+- Generic API client: `src/lib/api.ts`
+- OAuth helpers: `src/lib/auth.ts`
+- Shared frontend types: `src/types.ts`
+- App-level navigation types: `src/types/app.ts`
+- SecureStore key constants + demo credentials: `src/constants/keys.ts`
+- **Customer domain state + handlers**: `src/context/CustomerSessionContext.tsx` — exposed via `useCustomerSession()`
+- **Staff domain state + handlers**: `src/context/StaffSessionContext.tsx` — exposed via `useStaffSession()`
+- Pure UI components: `src/components/`
+- Screen UI components: `src/screens/` — all screens are now prop-free; they pull from context
 
-Important reality: almost all business logic and UI state currently live in one large file, `App.tsx`. There is no component split yet, no router, no state library, and no test suite.
+There is still no router and no test suite.
 
 ## Folder structure
 
@@ -29,19 +35,89 @@ Important reality: almost all business logic and UI state currently live in one 
 SCCRMMVP/
   .github/workflows/eas-build.yml   CI/CD build workflow for EAS Android builds
   assets/                           Expo icons and splash assets
-  App.tsx                           Main app UI and state logic
+  App.tsx                           Root: providers + AppShell + loading screen
   app.json                          Expo app config
   eas.json                          EAS build profiles
   index.ts                          Expo root registration
   package.json                      npm scripts and dependencies
   src/
     config.ts                       Environment variable wiring
+    constants/
+      keys.ts                       SecureStore key names + demo login credentials
+      theme.ts                      Central design tokens — colors, radius, spacing, shadow
+    components/
+      ActionButton.tsx              Pressable button (primary / secondary / ghost)
+      Field.tsx                     Labelled TextInput
+      Section.tsx                   Card-style section wrapper
+    context/
+      CustomerSessionContext.tsx    Customer state, auth/signup/profile handlers, useCustomerSession()
+      StaffSessionContext.tsx       Staff state, device/search/points handlers, useStaffSession()
     lib/
       api.ts                        fetch wrapper + JWT payload decode
       auth.ts                       LINE and Google browser auth helpers
+    screens/
+      CustomerAuthScreen.tsx        Login + inline signup (email + LINE + Google)
+      CustomerHistoryScreen.tsx     Point transaction list
+      CustomerNavBar.tsx            Tab bar + logout for authenticated customer
+      CustomerPointsScreen.tsx      Points balance + tier progress bar
+      CustomerProfileScreen.tsx     Profile edit form
+      SocialCompleteScreen.tsx      Post-social-login profile completion
+      StaffAuthScreen.tsx           Staff device PIN authentication
+      StaffCustomerProfileScreen.tsx  Customer detail view for staff
+      StaffEarnScreen.tsx           Add points by purchase amount
+      StaffHomeScreen.tsx           Phone search + new-customer shortcut
+      StaffRedeemScreen.tsx         Point redemption form
+      StaffRegisterScreen.tsx       New customer registration form
     types.ts                        Customer / points / session data types
-    types/base-64.d.ts              Type support for base-64 package
+    types/
+      app.ts                        Mode / StaffView / CustomerView union types
+      base-64.d.ts                  Type support for base-64 package
+    utils/
+      validation.ts                 Compound input validators (no external dependencies)
 ```
+
+## State architecture
+
+App.tsx owns three thin pieces of cross-cutting state:
+
+| State | Type | Why it stays in App |
+|-------|------|---------------------|
+| `mode` | `'customer' \| 'staff' \| 'gateway'` | Controls which domain renders; set by both contexts |
+| `busy` | `boolean` | Shared full-screen loading indicator across domains |
+| `message` | `string` | Shared status banner across domains |
+
+Both providers receive `setBusy`, `setMessage`, `setMode` as stable setter props so they can drive top-level UI from within domain handlers.
+
+### CustomerSessionContext (`useCustomerSession`)
+
+Owns all customer-domain state and handlers:
+
+- Post-login data: `customer`, `customerAccessToken`, `customerBalance`, `customerLifetimeEarned`, `customerHistory`, `tierProgress`
+- View routing: `customerView`, `setCustomerView`
+- Auth/signup form fields: `customerEmail`, `customerPassword`, `customerName`, `customerPhone`, `customerOtp`, `signupExpanded`
+- Actions: `loginWithEmail`, `handleProviderLogin`, `startEmailOtpSignup`, `completeEmailSignup`, `completeSocialSignup`, `saveCustomerProfile`, `logoutCustomer`
+- Session restoration: runs automatically in `useEffect` on provider mount
+
+### StaffSessionContext (`useStaffSession`)
+
+Owns all staff-domain state and handlers:
+
+- Auth: `staffToken`, `staffView`, `staffDeviceName`, `staffPin`
+- Customer lookup: `staffSearchPhone`, `selectedCustomer`
+- Points form: `staffAmount`, `staffRedeemPoints`, `staffRewardName`
+- Register form: `staffRegisterName`, `staffRegisterPhone`, `staffRegisterEmail`
+- Actions: `bootstrapStaffDevice`, `searchCustomer`, `registerStaffCustomer`, `earnPoints`, `redeemPoints`, `logoutStaff`
+- Session restoration: reads SecureStore on provider mount (no API call needed)
+
+### Rules for future edits
+
+- **Adding a new customer screen**: call `useCustomerSession()` for state and handlers. No props needed.
+- **Adding a new staff screen**: call `useStaffSession()`. No props needed.
+- **Adding a new customer action**: add handler inside `CustomerSessionProvider`; expose in the context value type.
+- **Adding a new staff action**: same pattern in `StaffSessionProvider`.
+- **Do not** put unrelated state into an existing context — create a new one.
+- **Do not** call `useCustomerSession()` from a staff screen or vice versa.
+- **Do not** read `mode` from inside a screen component — the parent already guards by `mode ===` before rendering.
 
 ## How to run locally
 
@@ -106,15 +182,46 @@ eas build --platform android --profile production
 
 ## How to test
 
-There is no formal automated test suite yet.
+A minimal Jest test suite is in place for the validation layer.
 
-Current useful verification commands:
+### Run tests
+
+```powershell
+npm test
+```
+
+Watch mode (re-runs on save):
+
+```powershell
+npm run test:watch
+```
+
+Type check:
 
 ```powershell
 npx tsc --noEmit
 ```
 
-Manual QA currently matters more than anything else:
+**Rule for future edits:** run `npm test` and `npx tsc --noEmit` before reporting a task complete.
+
+### What is covered
+
+- `src/utils/validation.ts` — all 10 exported compound validators (57 test cases)
+  - Valid inputs accepted
+  - Required-field rejections
+  - Email format validation
+  - Thai phone format validation (with/without non-digit characters)
+  - Positive numeric amount parsing (zero, negative, NaN all rejected)
+  - Optional-field handling (blank email accepted where email is optional)
+
+### What is intentionally not covered yet
+
+- Screen rendering (no snapshot or component tests)
+- Context handler behavior (no mocks of SecureStore or the API layer)
+- Social login OAuth flow
+- End-to-end / Detox flows
+
+Manual QA still matters for runtime behavior:
 
 - Launch in Expo Go on Android emulator
 - Exercise login / signup / points / profile screens
@@ -277,16 +384,42 @@ What is incomplete:
 
 ## Known issues, risks, and fragile areas
 
-1. `App.tsx` is oversized and mixes presentation, API orchestration, local demo behavior, and session state. Refactoring risk is high.
+1. `App.tsx` is a thin shell that owns only `mode`, `busy`, and `message`. All domain state lives in the two context providers.
 2. There is no backend implementation here, so frontend changes can easily drift away from the real server contract.
 3. The app currently includes a demo preview path when `EXPO_PUBLIC_API_BASE_URL` is unset. That is useful for UI inspection but dangerous if forgotten.
 4. Social auth likely needs real-device testing. The code itself notes that LINE emulator behavior differs.
 5. Session refresh relies on JWT payload containing `customerId`. If backend token shape changes, hydration breaks.
 6. `apiRequest()` assumes JSON responses on both success and error paths. Non-JSON backend responses will fail noisily.
-7. There is no client-side validation layer worth trusting yet for email, phone, numeric amount, OTP, or password inputs.
+7. Client-side validation is now in place via `src/utils/validation.ts`. All ten action handlers validate inputs before calling `setBusy(true)` and before any API call. Errors surface through `setMessage`. No third-party validation library is used.
 8. There is no offline/error-retry strategy.
-9. No linting, unit tests, or integration tests are present.
+9. A minimal Jest suite covers `src/utils/validation.ts` (57 tests). Screen rendering and context mocks are not yet tested.
 10. Expo Go state and SecureStore can preserve stale sessions; manual cleanup may be needed during QA.
+
+## Design tokens
+
+All colors, radii, spacing, and shadow presets are centralized in `src/constants/theme.ts`. **Never add a hardcoded hex color to a component or screen.** Import `theme` and reference a token instead.
+
+Corporate identity roots: blue `#0000FE`, yellow `#FCFF59`, white `#FFFFFF`.
+
+Refined premium palette in use:
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `brand` | `#0B1FB8` | Primary CTA, headings, progress fill |
+| `brandAccent` | `#1D3CFF` | Active/focused states |
+| `brandYellow` | `#F6E96B` | Reserved — badge/accent future use |
+| `pageBackground` | `#FAFAF4` | App shell background |
+| `cardBackground` | `#FFFFFF` | Section card surfaces |
+| `inputBackground` | `#F9FAFB` | Text input fields |
+| `textHeading` | `#111827` | Titles, large numbers |
+| `textBody` | `#374151` | Data rows, body text |
+| `textMuted` | `#6B7280` | Subtitles, helpers, timestamps |
+| `border` | `#E5E7EB` | Card/input outlines |
+| `primaryBg/Text` | `#0B1FB8` / `#FFFFFF` | Primary button |
+| `secondaryBg/Text` | `#EEF1FF` / `#0B1FB8` | Secondary button |
+| `ghostBorder/Text` | `#C7D2FE` / `#0B1FB8` | Ghost button |
+| `success` | `#16A34A` | Positive point amounts |
+| `error` | `#DC2626` | Error states |
 
 ## Deployment notes
 
@@ -417,8 +550,7 @@ Do not commit real values.
 
 ## Recommended next steps
 
-1. Split `App.tsx` into smaller screens/components before adding many more features.
-2. Confirm the real backend contract and document any mismatch with current frontend assumptions.
-3. Decide whether the preview-only demo login path should remain temporarily or be replaced with a proper mock/dev backend.
-4. Add at least lightweight validation and error-state handling for auth and points flows.
-5. Add automated checks beyond `npx tsc --noEmit`.
+1. Confirm the real backend contract and document any mismatch with current frontend assumptions.
+2. Decide whether the preview-only demo login path should remain temporarily or be replaced with a proper mock/dev backend.
+3. Add automated checks beyond `npx tsc --noEmit`.
+4. Consider adding OTP length/format validation once the backend's expected OTP length is confirmed.
