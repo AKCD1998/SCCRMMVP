@@ -11,7 +11,17 @@
     "test:watch": "jest --watch"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.claude/",
+      "<rootDir>/build/",
+      "<rootDir>/dist/"
+    ],
+    "watchPathIgnorePatterns": [
+      "<rootDir>/.claude/",
+      "<rootDir>/build/",
+      "<rootDir>/dist/"
+    ]
   },
   "dependencies": {
     "base-64": "^1.0.0",
