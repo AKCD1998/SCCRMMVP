@@ -1,21 +1,132 @@
+/**
+ * MemberCodeModal — digital membership card bottom sheet.
+ *
+ * Architecture: pure presentation component.
+ * - Receives a MemberCardViewModel from memberService (via CustomerPointsScreen).
+ * - Contains no business logic, no API calls, no context reads.
+ *
+ * Future-ready hooks (props to add when backend features land):
+ *   isRefreshing?: boolean        — show spinner while QR rotates
+ *   onRefresh?: () => void        — trigger a new QR token fetch
+ *   expiresAt?: Date              — show countdown / expiry warning
+ *   isOfflineCached?: boolean     — show stale-data badge
+ *   onScannerMode?: () => void    — flip to staff-facing scan view
+ */
+
 import QRCodeLib from 'qrcode';
 import React, { useMemo } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { theme } from '../constants/theme';
+import type { MemberCardViewModel } from '../types/memberTypes';
 
-// TODO: Replace with real member code fetched from backend.
-// Suggested endpoint: GET /api/sccrm/customers/:id/member-code
-// Or derive from customer.id returned at login and stored in CustomerSessionContext.
-// Backend service: https://dashboard.render.com/web/srv-d58idfm3jp1c73bhgv40
-// Database:        https://dashboard.render.com/d/dpg-d5c8t695pdvs73c4qffg-a
-export const MOCK_MEMBER_CODE = 'SCM-POINT-v1-A1B2C3D4';
+// ─── CODE128B encoder ──────────────────────────────────────────────────────────
+// Encodes any ASCII 32-126 string to a CODE128 subset-B bar pattern.
+// Returns an array of strips: { units: number; dark: boolean }
+// which are rendered as proportional View children in a flex row.
 
-// Pure-View QR code: uses `qrcode` (pure JS, no native modules) to get the
-// module matrix, then renders each dark/light cell as a tiny View.
-function QRCodeView({ value, cellSize = 5 }: { value: string; cellSize?: number }) {
+// Full CODE128 pattern table (indices 0-106).
+// Each entry: [bar,space,bar,space,bar,space] widths (6 values, each 1-4).
+// Index 106 (STOP) has 7 values: trailing terminator bar included.
+const C128: number[][] = [
+  [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,2,2,3],[1,2,1,3,2,2], // 0-4
+  [1,3,1,2,2,2],[1,2,2,2,1,3],[1,2,2,3,1,2],[1,3,2,2,1,2],[2,2,1,2,1,3], // 5-9
+  [2,2,1,3,1,2],[2,3,1,2,1,2],[1,1,2,2,3,2],[1,2,2,1,3,2],[1,2,2,2,3,1], // 10-14
+  [1,1,3,2,2,2],[1,2,3,1,2,2],[1,2,3,2,2,1],[2,2,3,2,1,1],[2,2,1,1,3,2], // 15-19
+  [2,2,1,2,3,1],[2,1,3,2,1,2],[2,2,3,1,1,2],[3,1,2,1,3,1],[3,1,1,2,2,2], // 20-24
+  [3,2,1,1,2,2],[3,2,1,2,2,1],[3,1,2,2,1,2],[3,2,2,1,1,2],[3,2,2,2,1,1], // 25-29
+  [2,1,2,1,2,3],[2,1,2,3,2,1],[2,3,2,1,2,1],[1,1,1,3,2,3],[1,3,1,1,2,3], // 30-34
+  [1,3,1,3,2,1],[1,1,2,3,1,3],[1,3,2,1,1,3],[1,3,2,3,1,1],[2,1,1,3,1,3], // 35-39
+  [2,3,1,1,1,3],[2,3,1,3,1,1],[1,1,2,1,3,3],[1,1,2,3,3,1],[1,3,2,1,3,1], // 40-44
+  [1,1,3,1,2,3],[1,1,3,3,2,1],[1,3,3,1,2,1],[3,1,3,1,2,1],[2,1,1,3,3,1], // 45-49
+  [2,3,1,1,3,1],[2,1,3,1,1,3],[2,1,3,3,1,1],[2,1,3,1,3,1],[3,1,1,1,2,3], // 50-54
+  [3,1,1,3,2,1],[3,3,1,1,2,1],[3,1,2,1,1,3],[3,1,2,3,1,1],[3,3,2,1,1,1], // 55-59
+  [3,1,4,1,1,1],[2,2,1,4,1,1],[4,3,1,1,1,1],[1,1,1,2,2,4],[1,1,1,4,2,2], // 60-64
+  [1,2,1,1,2,4],[1,2,1,4,2,1],[1,4,1,1,2,2],[1,4,1,2,2,1],[1,1,2,2,1,4], // 65-69
+  [1,1,2,4,1,2],[1,2,2,1,1,4],[1,2,2,4,1,1],[1,4,2,1,1,2],[1,4,2,2,1,1], // 70-74
+  [2,4,1,2,1,1],[2,2,1,1,1,4],[4,1,3,1,1,1],[2,4,1,1,1,2],[1,3,4,1,1,1], // 75-79
+  [1,1,1,2,4,2],[1,2,1,1,4,2],[1,2,1,2,4,1],[1,1,4,2,1,2],[1,2,4,1,1,2], // 80-84
+  [1,2,4,2,1,1],[4,1,1,2,1,2],[4,2,1,1,1,2],[4,2,1,2,1,1],[2,1,2,1,4,1], // 85-89
+  [2,1,4,1,2,1],[4,1,2,1,2,1],[1,1,1,1,4,3],[1,1,1,3,4,1],[1,3,1,1,4,1], // 90-94
+  [1,1,4,1,1,3],[1,1,4,3,1,1],[4,1,1,1,1,3],[4,1,1,3,1,1],[1,1,3,1,4,1], // 95-99
+  [1,1,4,1,3,1],[3,1,1,1,4,1],[4,1,1,1,3,1],                               // 100-102
+  [2,1,1,4,1,2],[2,1,1,2,1,4],[2,1,1,2,3,2],                               // 103=StartA, 104=StartB, 105=StartC
+  [2,3,3,1,1,1,2],                                                          // 106=Stop (7 elements)
+];
+
+const START_B = 104;
+const STOP    = 106;
+
+type Strip = { units: number; dark: boolean };
+
+function encodeCode128B(text: string): Strip[] {
+  const codeValues: number[] = [START_B];
+  let checksum = START_B;
+
+  for (let i = 0; i < text.length; i++) {
+    const cp = text.charCodeAt(i);
+    // CODE128B covers ASCII 32-126 only; skip anything outside
+    if (cp < 32 || cp > 126) continue;
+    const val = cp - 32;
+    codeValues.push(val);
+    checksum += val * (i + 1);
+  }
+  codeValues.push(checksum % 103); // checksum symbol
+  codeValues.push(STOP);
+
+  const strips: Strip[] = [];
+  // 10-unit quiet zone (white) on each side
+  strips.push({ units: 10, dark: false });
+  for (const cv of codeValues) {
+    const pattern = C128[cv];
+    if (!pattern) continue;
+    pattern.forEach((units, idx) => {
+      strips.push({ units, dark: idx % 2 === 0 }); // even index = bar (dark)
+    });
+  }
+  strips.push({ units: 10, dark: false });
+  return strips;
+}
+
+// ─── Code128Barcode component ──────────────────────────────────────────────────
+
+function Code128Barcode({ payload, height = 72 }: { payload: string; height?: number }) {
+  const strips = useMemo(() => encodeCode128B(payload), [payload]);
+  const totalUnits = strips.reduce((s, b) => s + b.units, 0);
+
+  return (
+    <View style={{ width: '100%', height, backgroundColor: '#FFFFFF' }}>
+      {/* flex row: each strip's flex = its unit width, proportional to totalUnits */}
+      <View style={{ flex: 1, flexDirection: 'row' }}>
+        {strips.map((strip, i) => (
+          <View
+            key={i}
+            style={{
+              flex: strip.units / totalUnits,
+              height: '100%',
+              backgroundColor: strip.dark ? '#000000' : '#FFFFFF',
+            }}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ─── QRCodeView component ──────────────────────────────────────────────────────
+// Uses qrcode (pure JS) to build the module matrix, renders each cell as a View.
+// Receives the full structured QR payload string (JSON), not just memberCode.
+
+function QRCodeView({ payload, cellSize = 5 }: { payload: string; cellSize?: number }) {
   const matrix = useMemo<boolean[][]>(() => {
     try {
-      const qr = QRCodeLib.create(value, { errorCorrectionLevel: 'M' });
+      const qr = QRCodeLib.create(payload, { errorCorrectionLevel: 'M' });
       const { data, size } = qr.modules;
       const rows: boolean[][] = [];
       for (let r = 0; r < size; r++) {
@@ -29,9 +140,11 @@ function QRCodeView({ value, cellSize = 5 }: { value: string; cellSize?: number 
     } catch {
       return [];
     }
-  }, [value]);
+  }, [payload]);
 
-  if (matrix.length === 0) return <View style={{ width: cellSize * 33, height: cellSize * 33 }} />;
+  if (matrix.length === 0) {
+    return <View style={{ width: cellSize * 33, height: cellSize * 33 }} />;
+  }
 
   const dim = matrix.length * cellSize;
   return (
@@ -44,7 +157,7 @@ function QRCodeView({ value, cellSize = 5 }: { value: string; cellSize?: number 
               style={{
                 width: cellSize,
                 height: cellSize,
-                backgroundColor: dark ? theme.colors.textHeading : '#FFFFFF',
+                backgroundColor: dark ? '#000000' : '#FFFFFF',
               }}
             />
           ))}
@@ -54,40 +167,30 @@ function QRCodeView({ value, cellSize = 5 }: { value: string; cellSize?: number 
   );
 }
 
-// Deterministic stripe pattern from any string — purely visual, not encoded.
-// TODO: When connecting to backend, swap for a real Code128 barcode renderer
-//       once the real memberCode is available from the backend.
-function MockBarcode({ value, width = 272, height = 72 }: { value: string; width?: number; height?: number }) {
-  type Stripe = { flex: number; dark: boolean };
-  const stripes: Stripe[] = [];
+// ─── SectionLabel ─────────────────────────────────────────────────────────────
 
-  for (let i = 0; i < value.length; i++) {
-    const c = value.charCodeAt(i);
-    stripes.push({ flex: 2 + (c % 5), dark: true });
-    stripes.push({ flex: 1 + ((c >> 2) % 4), dark: false });
-  }
-
-  return (
-    <View style={{ width, height, flexDirection: 'row', overflow: 'hidden' }}>
-      {stripes.map((s, i) => (
-        <View
-          key={i}
-          style={{ flex: s.flex, height, backgroundColor: s.dark ? theme.colors.textHeading : '#FFFFFF' }}
-        />
-      ))}
-    </View>
-  );
+function SectionLabel({ text }: { text: string }) {
+  return <Text style={styles.sectionLabel}>{text}</Text>;
 }
+
+// ─── MemberCodeModal ───────────────────────────────────────────────────────────
 
 interface MemberCodeModalProps {
   visible: boolean;
   onClose: () => void;
-  // TODO: When backend is ready, pass the real member code from CustomerSessionContext
-  //       e.g. memberCode={customer?.memberCode ?? MOCK_MEMBER_CODE}
-  memberCode?: string;
+  memberCard: MemberCardViewModel | null;
+  // Future props:
+  // isRefreshing?: boolean;
+  // onRefresh?: () => void;
+  // expiresAt?: Date;
+  // isOfflineCached?: boolean;
 }
 
-export function MemberCodeModal({ visible, onClose, memberCode = MOCK_MEMBER_CODE }: MemberCodeModalProps) {
+export function MemberCodeModal({
+  visible,
+  onClose,
+  memberCard,
+}: MemberCodeModalProps) {
   return (
     <Modal
       visible={visible}
@@ -98,43 +201,80 @@ export function MemberCodeModal({ visible, onClose, memberCode = MOCK_MEMBER_COD
     >
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
+
+          {/* ── Drag handle ─────────────────────────────────────────────── */}
+          <View style={styles.handle} />
+
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
-            <Text style={styles.title}>Member Code</Text>
-            <Text style={styles.subtitle}>Show this to staff to scan</Text>
+            {/* ── Header ──────────────────────────────────────────────── */}
+            <Text style={styles.title}>Member Card</Text>
+            {memberCard ? (
+              <Text style={styles.subtitle}>
+                {memberCard.tierLabel}
+                {'  ·  '}
+                {memberCard.pointsBalance.toLocaleString()} pts
+              </Text>
+            ) : (
+              <Text style={styles.subtitle}>Loading…</Text>
+            )}
 
+            {/* ── Barcode card ─────────────────────────────────────────── */}
             <View style={styles.card}>
-              <Text style={styles.sectionLabel}>BARCODE</Text>
+              <SectionLabel text="BARCODE  ·  CODE128" />
               <View style={styles.barcodeArea}>
-                <MockBarcode value={memberCode} />
+                {memberCard ? (
+                  <Code128Barcode payload={memberCard.barcodePayload} height={68} />
+                ) : (
+                  <View style={styles.placeholder} />
+                )}
               </View>
             </View>
 
+            {/* ── QR card ──────────────────────────────────────────────── */}
             <View style={styles.card}>
-              <Text style={styles.sectionLabel}>QR CODE</Text>
+              <SectionLabel text="QR CODE" />
               <View style={styles.qrArea}>
-                <QRCodeView value={memberCode} cellSize={5} />
+                {memberCard ? (
+                  <QRCodeView payload={memberCard.qrPayload} cellSize={5} />
+                ) : (
+                  <View style={[styles.placeholder, { height: 165, width: 165 }]} />
+                )}
               </View>
             </View>
 
-            <View style={styles.codeTextContainer}>
+            {/* ── Member code text ─────────────────────────────────────── */}
+            <View style={styles.codeBlock}>
               <Text style={styles.codeLabel}>MEMBER CODE</Text>
-              <Text style={styles.codeText} selectable>{memberCode}</Text>
-              <Text style={styles.codeHint}>Staff can type this manually if scanning fails</Text>
+              <Text style={styles.codeText} selectable>
+                {memberCard?.memberCode ?? '—'}
+              </Text>
+              <Text style={styles.codeHint}>
+                Staff can type this manually if scanning fails
+              </Text>
             </View>
           </ScrollView>
 
-          <Pressable style={styles.closeButton} onPress={onClose}>
+          {/* ── Close button ────────────────────────────────────────────── */}
+          <Pressable
+            style={({ pressed }) => [styles.closeButton, pressed && styles.closeButtonPressed]}
+            onPress={onClose}
+            accessibilityLabel="Close member card"
+            accessibilityRole="button"
+          >
             <Text style={styles.closeButtonText}>Close</Text>
           </Pressable>
+
         </View>
       </View>
     </Modal>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   backdrop: {
@@ -146,33 +286,41 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.pageBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 12,
     paddingBottom: 32,
-    maxHeight: '90%',
+    maxHeight: '92%',
+  },
+  handle: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.border,
+    marginTop: 10,
+    marginBottom: 4,
   },
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
-    paddingBottom: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
     gap: theme.spacing.md,
   },
   title: {
     fontSize: 22,
     fontWeight: '800',
     color: theme.colors.textHeading,
-    marginTop: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.colors.textMuted,
+    letterSpacing: 0.3,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     color: theme.colors.textMuted,
     alignSelf: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   card: {
     width: '100%',
@@ -185,47 +333,56 @@ const styles = StyleSheet.create({
     ...theme.shadow.card,
   },
   barcodeArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
+    width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
+    paddingVertical: 10,
+    overflow: 'hidden',
   },
   qrArea: {
-    padding: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
+    padding: 10,
   },
-  codeTextContainer: {
+  placeholder: {
+    height: 68,
+    width: '100%',
+    backgroundColor: theme.colors.border,
+    borderRadius: 6,
+  },
+  codeBlock: {
     width: '100%',
     alignItems: 'center',
     gap: 4,
   },
   codeLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     color: theme.colors.textMuted,
   },
   codeText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '800',
     color: theme.colors.brand,
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     fontVariant: ['tabular-nums'],
   },
   codeHint: {
-    fontSize: 12,
+    fontSize: 11,
     color: theme.colors.textMuted,
     textAlign: 'center',
+    lineHeight: 16,
   },
   closeButton: {
     marginHorizontal: theme.spacing.md,
-    marginTop: 8,
     backgroundColor: theme.colors.brand,
     borderRadius: theme.radius.md,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
+  },
+  closeButtonPressed: {
+    opacity: 0.85,
   },
   closeButtonText: {
     color: '#FFFFFF',

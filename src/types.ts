@@ -9,6 +9,10 @@ export type Customer = {
   is_active?: boolean;
   balance?: number;
   recentTransactions?: Transaction[];
+  // Added once backend migration runs:
+  // ALTER TABLE customers ADD COLUMN member_code VARCHAR(50) UNIQUE;
+  // See: src/services/memberService.ts for the full integration TODO.
+  member_code?: string | null;
 };
 
 export type Transaction = {

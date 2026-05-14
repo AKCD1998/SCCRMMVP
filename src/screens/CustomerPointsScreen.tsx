@@ -1,31 +1,43 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { MemberCodeModal, MOCK_MEMBER_CODE } from '../components/MemberCodeModal';
+import { MemberCodeModal } from '../components/MemberCodeModal';
 import { Section } from '../components/Section';
 import { ScanButtonV1 } from '../components/ScanButton';
 import { theme } from '../constants/theme';
 import { useCustomerSession } from '../context/CustomerSessionContext';
+import { fetchMemberCard } from '../services/memberService';
+import type { MemberCardViewModel } from '../types/memberTypes';
 
 export function CustomerPointsScreen() {
-  const { customerBalance, customer, customerLifetimeEarned, tierProgress } = useCustomerSession();
+  const {
+    customer,
+    customerAccessToken,
+    customerBalance,
+    customerLifetimeEarned,
+    tierProgress,
+  } = useCustomerSession();
+
   const [showMemberCode, setShowMemberCode] = useState(false);
+  const [memberCard, setMemberCard] = useState<MemberCardViewModel | null>(null);
+
+  // Lazily fetch the member card the first time the modal is opened.
+  // memberService.fetchMemberCard() returns mock data now; later it will
+  // call the shared backend (currentSC-official-website-project).
+  const handleOpenMemberCard = useCallback(async () => {
+    setShowMemberCode(true);
+    if (memberCard || !customer || !customerAccessToken) return;
+    const card = await fetchMemberCard(customer.id, customerAccessToken);
+    setMemberCard(card);
+  }, [memberCard, customer, customerAccessToken]);
 
   if (!customer) return null;
-
-  // TODO: When backend is ready, replace MOCK_MEMBER_CODE with the real member code.
-  // Options:
-  //   1. Add memberCode field to the Customer type in src/types.ts
-  //   2. Expose it from CustomerSessionContext (e.g. customer.memberCode)
-  //   3. Fetch from: GET /api/sccrm/customers/:id/member-code
-  //      (Backend service: https://dashboard.render.com/web/srv-d58idfm3jp1c73bhgv40)
-  const memberCode = MOCK_MEMBER_CODE;
 
   return (
     <>
       <Section
         title="My Points"
         subtitle="Current balance plus tier progress."
-        headerRight={<ScanButtonV1 onPress={() => setShowMemberCode(true)} />}
+        headerRight={<ScanButtonV1 onPress={handleOpenMemberCard} />}
       >
         <Text style={styles.pointsValue}>{customerBalance}</Text>
         <Text style={styles.metricRow}>Tier: {customer.tier}</Text>
@@ -33,13 +45,15 @@ export function CustomerPointsScreen() {
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${tierProgress * 100}%` }]} />
         </View>
-        <Text style={styles.helper}>Redeem is coming soon. The app is already structured to support it later.</Text>
+        <Text style={styles.helper}>
+          Redeem is coming soon. The app is already structured to support it later.
+        </Text>
       </Section>
 
       <MemberCodeModal
         visible={showMemberCode}
         onClose={() => setShowMemberCode(false)}
-        memberCode={memberCode}
+        memberCard={memberCard}
       />
     </>
   );
