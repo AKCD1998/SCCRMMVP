@@ -1,0 +1,144 @@
+{
+  "app": {
+    "name": "SCCRM",
+    "subtitle": "Pharmacy CRM — member points for staff and customers.",
+    "preparing": "Preparing SCCRM..."
+  },
+  "lang": {
+    "selectTitle": "Choose Language",
+    "selectSubtitle": "You can change this anytime in Settings.",
+    "thai": "ไทย",
+    "english": "English"
+  },
+  "drawer": {
+    "myPoints": "My Points",
+    "history": "History",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logoutTitle": "Log Out",
+    "logoutMessage": "Are you sure you want to log out?",
+    "logoutConfirm": "Log Out",
+    "logoutCancel": "Cancel"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "App preferences.",
+    "language": "Language",
+    "languageNote": "Change takes effect immediately."
+  },
+  "auth": {
+    "title": "Customer Login",
+    "subtitle": "Use email first. Social login stays available below.",
+    "email": "Email",
+    "password": "Password",
+    "loginButton": "Log In with Email",
+    "lineButton": "Continue with LINE",
+    "googleButton": "Continue with Google",
+    "openSignup": "Open Signup",
+    "fullName": "Full Name",
+    "phone": "Phone",
+    "otp": "Verification Code",
+    "sendOtp": "Send Signup OTP",
+    "completeSignup": "Complete Signup by Email",
+    "cancel": "Cancel",
+    "lineHint": "LINE login should be tested on a real Android device — emulator behavior differs."
+  },
+  "points": {
+    "title": "My Points",
+    "subtitle": "Current balance and tier progress.",
+    "tier": "Tier:",
+    "lifetime": "Lifetime earned:",
+    "redeemSoon": "Redeem is coming soon. The app is already structured to support it later."
+  },
+  "history": {
+    "title": "Transaction History",
+    "subtitle": "Newest earn and spend events first.",
+    "empty": "No point history yet.",
+    "redeemSoon": "Redeem (Coming Soon)"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Update the basics.",
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "save": "Save Profile"
+  },
+  "social": {
+    "title": "Complete Social Signup",
+    "subtitle": "Phone is required before your account is created.",
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "password": "Set Password",
+    "finish": "Finish Signup",
+    "backToLogin": "Back to Login"
+  },
+  "staffAuth": {
+    "title": "Staff Device Access",
+    "subtitle": "Authenticate this device with the shared staff PIN.",
+    "deviceName": "Device Name",
+    "pin": "Staff PIN",
+    "unlock": "Unlock Staff Mode"
+  },
+  "staffHome": {
+    "title": "Staff Home",
+    "subtitle": "Search a customer by phone number.",
+    "phone": "Phone Number",
+    "search": "Search Customer",
+    "register": "Register New Customer",
+    "exit": "Exit Staff Mode"
+  },
+  "staffProfile": {
+    "title": "Customer Profile",
+    "subtitle": "Three taps or fewer to complete common staff actions.",
+    "unnamed": "Unnamed Customer",
+    "phone": "Phone:",
+    "tier": "Tier:",
+    "points": "Current Points:",
+    "recentTx": "Recent Transactions:",
+    "addPoints": "Add Points",
+    "redeemPoints": "Redeem Points",
+    "backToSearch": "Back to Search"
+  },
+  "earn": {
+    "title": "Add Points",
+    "subtitle": "1 point per 10 THB. Customer: {{name}}",
+    "amount": "Purchase Amount (THB)",
+    "estimated": "Estimated points: {{points}}",
+    "confirm": "Confirm Add Points",
+    "back": "Back to Profile"
+  },
+  "redeem": {
+    "title": "Redeem Points",
+    "subtitle": "Available balance: {{balance}}",
+    "points": "Points to Redeem",
+    "reward": "Reward Name",
+    "rewardPlaceholder": "Coupon or reward",
+    "confirm": "Confirm Redemption",
+    "back": "Back to Profile"
+  },
+  "register": {
+    "title": "Register Customer",
+    "subtitle": "Minimum fields only.",
+    "fullName": "Full Name",
+    "phone": "Phone",
+    "email": "Email (optional)",
+    "create": "Create Customer",
+    "back": "Back to Staff Home"
+  },
+  "earnSuccess": {
+    "heading": "Points Earned!",
+    "subheading": "Congratulations! Points have been added to your account.",
+    "detailsTitle": "Transaction Details",
+    "memberName": "Member",
+    "receipt": "Receipt No.",
+    "branch": "Branch",
+    "amount": "Purchase Amount",
+    "pointsEarned": "+{{points}} pts",
+    "totalPoints": "Total Points",
+    "totalValue": "{{balance}} pts",
+    "time": "Transaction Time",
+    "back": "Back"
+  }
+}

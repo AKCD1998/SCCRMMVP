@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { MemberCodeModal } from '../components/MemberCodeModal';
 import { Section } from '../components/Section';
 import { ScanButtonV1 } from '../components/ScanButton';
@@ -12,6 +13,7 @@ import type { EarnResult, MemberCardViewModel } from '../types/memberTypes';
 const POLL_INTERVAL_MS = 3000;
 
 export function CustomerPointsScreen() {
+  const { t } = useTranslation();
   const {
     customer,
     customerAccessToken,
@@ -118,19 +120,17 @@ export function CustomerPointsScreen() {
   return (
     <>
       <Section
-        title="My Points"
-        subtitle="Current balance plus tier progress."
+        title={t('points.title')}
+        subtitle={t('points.subtitle')}
         headerRight={<ScanButtonV1 onPress={handleOpenMemberCard} />}
       >
         <Text style={styles.pointsValue}>{customerBalance}</Text>
-        <Text style={styles.metricRow}>Tier: {customer.tier}</Text>
-        <Text style={styles.metricRow}>Lifetime earned: {customerLifetimeEarned}</Text>
+        <Text style={styles.metricRow}>{t('points.tier')} {customer.tier}</Text>
+        <Text style={styles.metricRow}>{t('points.lifetime')} {customerLifetimeEarned}</Text>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${tierProgress * 100}%` }]} />
         </View>
-        <Text style={styles.helper}>
-          Redeem is coming soon. The app is already structured to support it later.
-        </Text>
+        <Text style={styles.helper}>{t('points.redeemSoon')}</Text>
       </Section>
 
       <MemberCodeModal

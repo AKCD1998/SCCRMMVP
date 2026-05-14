@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ActionButton } from '../components/ActionButton';
 import { Field } from '../components/Field';
 import { Section } from '../components/Section';
@@ -7,19 +8,22 @@ import { theme } from '../constants/theme';
 import { useStaffSession } from '../context/StaffSessionContext';
 
 export function StaffEarnScreen() {
+  const { t } = useTranslation();
   const { selectedCustomer, staffAmount, setStaffAmount, earnPoints, setStaffView } = useStaffSession();
 
   if (!selectedCustomer) return null;
 
   return (
     <Section
-      title="Add Points"
-      subtitle={`1 point per 10 THB. Customer: ${selectedCustomer.full_name || selectedCustomer.phone}`}
+      title={t('earn.title')}
+      subtitle={t('earn.subtitle', { name: selectedCustomer.full_name || selectedCustomer.phone })}
     >
-      <Field label="Purchase Amount (THB)" value={staffAmount} onChangeText={setStaffAmount} keyboardType="numeric" />
-      <Text style={styles.metricRow}>Estimated points: {Math.floor(Number(staffAmount || 0) / 10)}</Text>
-      <ActionButton label="Confirm Add Points" onPress={earnPoints} />
-      <ActionButton label="Back to Profile" onPress={() => setStaffView('profile')} variant="ghost" />
+      <Field label={t('earn.amount')} value={staffAmount} onChangeText={setStaffAmount} keyboardType="numeric" />
+      <Text style={styles.metricRow}>
+        {t('earn.estimated', { points: Math.floor(Number(staffAmount || 0) / 10) })}
+      </Text>
+      <ActionButton label={t('earn.confirm')} onPress={earnPoints} />
+      <ActionButton label={t('earn.back')} onPress={() => setStaffView('profile')} variant="ghost" />
     </Section>
   );
 }

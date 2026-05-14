@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ActionButton } from '../components/ActionButton';
 import { Field } from '../components/Field';
 import { Section } from '../components/Section';
@@ -9,6 +10,7 @@ import { theme } from '../constants/theme';
 import { useCustomerSession } from '../context/CustomerSessionContext';
 
 export function CustomerAuthScreen() {
+  const { t } = useTranslation();
   const {
     customerEmail, setCustomerEmail,
     customerPassword, setCustomerPassword,
@@ -25,34 +27,32 @@ export function CustomerAuthScreen() {
   const showDemoHint = !appConfig.apiBaseUrl;
 
   return (
-    <Section title="Customer Login" subtitle="Use email first. Social login stays available below.">
-      <Field label="Email" value={customerEmail} onChangeText={setCustomerEmail} keyboardType="email-address" />
-      <Field label="Password" value={customerPassword} onChangeText={setCustomerPassword} secureTextEntry />
-      <ActionButton label="Log In with Email" onPress={loginWithEmail} />
-      <ActionButton label="Continue with LINE" onPress={() => handleProviderLogin('line')} variant="secondary" />
-      <ActionButton label="Continue with Google" onPress={() => handleProviderLogin('google')} variant="secondary" />
+    <Section title={t('auth.title')} subtitle={t('auth.subtitle')}>
+      <Field label={t('auth.email')} value={customerEmail} onChangeText={setCustomerEmail} keyboardType="email-address" />
+      <Field label={t('auth.password')} value={customerPassword} onChangeText={setCustomerPassword} secureTextEntry />
+      <ActionButton label={t('auth.loginButton')} onPress={loginWithEmail} />
+      <ActionButton label={t('auth.lineButton')} onPress={() => handleProviderLogin('line')} variant="secondary" />
+      <ActionButton label={t('auth.googleButton')} onPress={() => handleProviderLogin('google')} variant="secondary" />
       {showDemoHint ? (
         <Text style={styles.helper}>
-          Demo preview is enabled. Use {DEMO_EMAIL} / {DEMO_PASSWORD} while the API base URL is still unset.
+          Demo preview: {DEMO_EMAIL} / {DEMO_PASSWORD}
         </Text>
       ) : null}
       {!signupExpanded ? (
-        <ActionButton label="Open Signup" onPress={() => setSignupExpanded(true)} variant="ghost" />
+        <ActionButton label={t('auth.openSignup')} onPress={() => setSignupExpanded(true)} variant="ghost" />
       ) : (
         <View style={styles.signupBlock}>
-          <Field label="Full Name" value={customerName} onChangeText={setCustomerName} />
-          <Field label="Phone" value={customerPhone} onChangeText={setCustomerPhone} keyboardType="phone-pad" />
-          <Field label="Email" value={customerEmail} onChangeText={setCustomerEmail} keyboardType="email-address" />
-          <ActionButton label="Send Signup OTP" onPress={startEmailOtpSignup} variant="secondary" />
-          <Field label="Verification Code" value={customerOtp} onChangeText={setCustomerOtp} keyboardType="numeric" />
-          <Field label="Password" value={customerPassword} onChangeText={setCustomerPassword} secureTextEntry />
-          <ActionButton label="Complete Signup by Email" onPress={completeEmailSignup} />
-          <ActionButton label="Cancel" onPress={() => setSignupExpanded(false)} variant="ghost" />
+          <Field label={t('auth.fullName')} value={customerName} onChangeText={setCustomerName} />
+          <Field label={t('auth.phone')} value={customerPhone} onChangeText={setCustomerPhone} keyboardType="phone-pad" />
+          <Field label={t('auth.email')} value={customerEmail} onChangeText={setCustomerEmail} keyboardType="email-address" />
+          <ActionButton label={t('auth.sendOtp')} onPress={startEmailOtpSignup} variant="secondary" />
+          <Field label={t('auth.otp')} value={customerOtp} onChangeText={setCustomerOtp} keyboardType="numeric" />
+          <Field label={t('auth.password')} value={customerPassword} onChangeText={setCustomerPassword} secureTextEntry />
+          <ActionButton label={t('auth.completeSignup')} onPress={completeEmailSignup} />
+          <ActionButton label={t('auth.cancel')} onPress={() => setSignupExpanded(false)} variant="ghost" />
         </View>
       )}
-      <Text style={styles.helper}>
-        LINE uses Expo Auth Session and should be tested on a real Android device because emulator behavior differs.
-      </Text>
+      <Text style={styles.helper}>{t('auth.lineHint')}</Text>
     </Section>
   );
 }

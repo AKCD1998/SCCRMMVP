@@ -6,6 +6,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { Section } from '../components/Section';
 import { theme } from '../constants/theme';
 import { useCustomerSession } from '../context/CustomerSessionContext';
@@ -18,7 +20,7 @@ interface EarnSuccessScreenProps {
 
 function formatDateTime(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('th-TH', {
+    return new Date(iso).toLocaleString(i18n.language === 'th' ? 'th-TH' : 'en-GB', {
       year: 'numeric', month: 'short', day: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
@@ -33,6 +35,7 @@ function formatThb(amount: number | null): string {
 }
 
 export function EarnSuccessScreen({ earnResult, onBack }: EarnSuccessScreenProps) {
+  const { t } = useTranslation();
   const { customer } = useCustomerSession();
 
   return (
@@ -41,13 +44,13 @@ export function EarnSuccessScreen({ earnResult, onBack }: EarnSuccessScreenProps
       <View style={styles.successBadge}>
         <Text style={styles.successIcon}>✓</Text>
       </View>
-      <Text style={styles.heading}>สะสมแต้มเสร็จสิ้น</Text>
-      <Text style={styles.subheading}>ยินดีด้วย! คุณได้รับแต้มสะสมแล้ว</Text>
+      <Text style={styles.heading}>{t('earnSuccess.heading')}</Text>
+      <Text style={styles.subheading}>{t('earnSuccess.subheading')}</Text>
 
       {/* ── Details card ── */}
-      <Section title="รายละเอียดการทำรายการ">
+      <Section title={t('earnSuccess.detailsTitle')}>
         <View style={styles.row}>
-          <Text style={styles.label}>ชื่อสมาชิก</Text>
+          <Text style={styles.label}>{t('earnSuccess.memberName')}</Text>
           <Text style={styles.value}>
             {earnResult.customerName || customer?.full_name || '—'}
           </Text>
@@ -55,43 +58,43 @@ export function EarnSuccessScreen({ earnResult, onBack }: EarnSuccessScreenProps
 
         {earnResult.receiptNumber ? (
           <View style={styles.row}>
-            <Text style={styles.label}>เลขที่ใบเสร็จ</Text>
+            <Text style={styles.label}>{t('earnSuccess.receipt')}</Text>
             <Text style={styles.value}>{earnResult.receiptNumber}</Text>
           </View>
         ) : null}
 
         {earnResult.branchName ? (
           <View style={styles.row}>
-            <Text style={styles.label}>สาขา</Text>
+            <Text style={styles.label}>{t('earnSuccess.branch')}</Text>
             <Text style={styles.value}>{earnResult.branchName}</Text>
           </View>
         ) : null}
 
         <View style={styles.row}>
-          <Text style={styles.label}>ยอดซื้อ</Text>
+          <Text style={styles.label}>{t('earnSuccess.amount')}</Text>
           <Text style={styles.value}>{formatThb(earnResult.totalAmount)}</Text>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.row}>
-          <Text style={styles.label}>แต้มที่ได้รับ</Text>
+          <Text style={styles.label}>{t('earnSuccess.totalPoints')}</Text>
           <Text style={[styles.value, styles.pointsEarned]}>
-            +{earnResult.earnedPoints.toLocaleString()} แต้ม
+            {t('earnSuccess.pointsEarned', { points: earnResult.earnedPoints.toLocaleString() })}
           </Text>
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.label}>แต้มสะสมทั้งหมด</Text>
+          <Text style={styles.label}>{t('earnSuccess.totalPoints')}</Text>
           <Text style={[styles.value, styles.totalPoints]}>
-            {earnResult.newBalance.toLocaleString()} แต้ม
+            {t('earnSuccess.totalValue', { balance: earnResult.newBalance.toLocaleString() })}
           </Text>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.row}>
-          <Text style={styles.label}>ทำรายการเมื่อ</Text>
+          <Text style={styles.label}>{t('earnSuccess.time')}</Text>
           <Text style={styles.value}>{formatDateTime(earnResult.createdAt)}</Text>
         </View>
       </Section>
@@ -101,9 +104,9 @@ export function EarnSuccessScreen({ earnResult, onBack }: EarnSuccessScreenProps
         style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
         onPress={onBack}
         accessibilityRole="button"
-        accessibilityLabel="ย้อนกลับ"
+        accessibilityLabel={t('earnSuccess.back')}
       >
-        <Text style={styles.backButtonText}>ย้อนกลับ</Text>
+        <Text style={styles.backButtonText}>{t('earnSuccess.back')}</Text>
       </Pressable>
     </ScrollView>
   );

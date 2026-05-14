@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { theme } from '../constants/theme';
 import { useCustomerSession } from '../context/CustomerSessionContext';
 
@@ -18,21 +19,22 @@ interface CustomerDrawerProps {
   onClose: () => void;
 }
 
-type NavView = 'points' | 'history' | 'profile';
-
-const NAV_ITEMS: { label: string; view: NavView }[] = [
-  { label: 'My Points', view: 'points' },
-  { label: 'History',   view: 'history' },
-  { label: 'Profile',   view: 'profile' },
-];
+type NavView = 'points' | 'history' | 'profile' | 'settings';
 
 export function CustomerDrawer({ visible, onClose }: CustomerDrawerProps) {
+  const { t } = useTranslation();
   const { customer, customerView, setCustomerView, logoutCustomer } = useCustomerSession();
 
-  // Mount state is separate from visible so we can animate out before unmounting
   const [isMounted, setIsMounted] = useState(false);
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const hasOpened = useRef(false);
+
+  const NAV_ITEMS: { label: string; view: NavView; icon?: string }[] = [
+    { label: t('drawer.myPoints'), view: 'points' },
+    { label: t('drawer.history'),  view: 'history' },
+    { label: t('drawer.profile'),  view: 'profile' },
+    { label: t('drawer.settings'), view: 'settings', icon: '⚙' },
+  ];
 
   useEffect(() => {
     if (visible) {
@@ -60,12 +62,12 @@ export function CustomerDrawer({ visible, onClose }: CustomerDrawerProps) {
 
   function confirmLogout() {
     Alert.alert(
-      'ออกจากระบบ',
-      'คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?',
+      t('drawer.logoutTitle'),
+      t('drawer.logoutMessage'),
       [
-        { text: 'ยกเลิก', style: 'cancel' },
+        { text: t('drawer.logoutCancel'), style: 'cancel' },
         {
-          text: 'ออกจากระบบ',
+          text: t('drawer.logoutConfirm'),
           style: 'destructive',
           onPress: () => {
             onClose();
@@ -86,10 +88,8 @@ export function CustomerDrawer({ visible, onClose }: CustomerDrawerProps) {
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        {/* Backdrop — tap to close */}
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        {/* Sliding panel */}
         <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
 
           {/* ── Header ── */}
@@ -124,6 +124,11 @@ export function CustomerDrawer({ visible, onClose }: CustomerDrawerProps) {
                   style={[styles.navItem, active && styles.navItemActive]}
                   onPress={() => handleNav(item.view)}
                 >
+                  {item.icon ? (
+                    <Text style={[styles.navIcon, active && styles.navIconActive]}>
+                      {item.icon}
+                    </Text>
+                  ) : null}
                   <Text style={[styles.navLabel, active && styles.navLabelActive]}>
                     {item.label}
                   </Text>
@@ -133,14 +138,13 @@ export function CustomerDrawer({ visible, onClose }: CustomerDrawerProps) {
             })}
           </View>
 
-          {/* ── Spacer pushes logout to the bottom ── */}
           <View style={styles.spacer} />
 
           {/* ── Logout ── */}
           <View style={styles.logoutSection}>
             <View style={styles.logoutDivider} />
             <Pressable style={styles.logoutButton} onPress={confirmLogout}>
-              <Text style={styles.logoutText}>Log Out</Text>
+              <Text style={styles.logoutText}>{t('drawer.logoutTitle')}</Text>
             </Pressable>
           </View>
 
@@ -174,7 +178,6 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
   },
 
-  // Header
   drawerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -197,7 +200,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // User info
   userBlock: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,7 +227,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
 
-  // Dividers
   sectionDivider: {
     height: 1,
     backgroundColor: theme.colors.border,
@@ -233,7 +234,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // Nav items
   navList: {
     paddingTop: 4,
   },
@@ -242,9 +242,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 20,
+    gap: 10,
   },
   navItemActive: {
     backgroundColor: theme.colors.secondaryBg,
+  },
+  navIcon: {
+    fontSize: 16,
+    color: theme.colors.textMuted,
+  },
+  navIconActive: {
+    color: theme.colors.brand,
   },
   navLabel: {
     flex: 1,
@@ -263,12 +271,10 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
 
-  // Spacer
   spacer: {
     flex: 1,
   },
 
-  // Logout
   logoutSection: {
     paddingBottom: 36,
   },

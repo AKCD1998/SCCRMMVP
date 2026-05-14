@@ -1,17 +1,19 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ActionButton } from '../components/ActionButton';
 import { Section } from '../components/Section';
 import { theme } from '../constants/theme';
 import { useCustomerSession } from '../context/CustomerSessionContext';
 
 export function CustomerHistoryScreen() {
+  const { t } = useTranslation();
   const { customerHistory } = useCustomerSession();
 
   return (
-    <Section title="Transaction History" subtitle="Newest earn and spend events first.">
+    <Section title={t('history.title')} subtitle={t('history.subtitle')}>
       {customerHistory.length === 0 ? (
-        <Text style={styles.helper}>No point history yet.</Text>
+        <Text style={styles.helper}>{t('history.empty')}</Text>
       ) : (
         customerHistory.map((item) => (
           <View key={item.id} style={styles.historyItem}>
@@ -25,7 +27,7 @@ export function CustomerHistoryScreen() {
           </View>
         ))
       )}
-      <ActionButton label="Redeem (Coming Soon)" onPress={() => {}} disabled />
+      <ActionButton label={t('history.redeemSoon')} onPress={() => {}} disabled />
     </Section>
   );
 }
