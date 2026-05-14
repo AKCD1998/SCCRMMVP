@@ -198,5 +198,19 @@
     "totalValue": "{{balance}} pts",
     "time": "Transaction Time",
     "back": "Back"
+  },
+  "consent": {
+    "checkboxLabel": "I have read and agree to the",
+    "privacyLink": "Privacy Policy",
+    "and": "and",
+    "termsLink": "Terms of Service",
+    "required": "You must agree to continue.",
+    "modalClose": "Close",
+    "privacyTitle": "Privacy Policy",
+    "privacyBody": "• We collect your name, phone, email, and points history to operate the loyalty program.\n• Your data is used only to deliver points, rewards, and service updates.\n• We do not sell your personal data to third parties.\n• You may request access, correction, or deletion of your data at any time.\n• Data is stored securely and access is restricted to authorised staff.",
+    "termsTitle": "Terms of Service",
+    "termsBody": "• Membership is free and open to customers of Sirichai Pharmacy.\n• Points are earned at 1 point per 10 THB of qualifying purchases.\n• Points and rewards have no cash value and cannot be transferred.\n• We reserve the right to adjust the program with reasonable notice.\n• Accounts found misusing the program may be suspended.",
+    "socialNotice": "Continuing with LINE or Google may share your email address with us to create or link your account.",
+    "forgotNotice": "Your email address will be used only to send a one-time password reset code."
   }
 }

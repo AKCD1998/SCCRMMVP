@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ActionButton } from '../components/ActionButton';
+import { ConsentCheckbox } from '../components/ConsentCheckbox';
 import { Field } from '../components/Field';
 import { Section } from '../components/Section';
 import { StepIndicator } from '../components/StepIndicator';
@@ -47,6 +48,8 @@ function PasswordRule({ met, text }: { met: boolean; text: string }) {
 export function CustomerRegisterScreen() {
   const { t } = useTranslation();
   const [step, setStep] = useState<RegisterStep>(1);
+  const [consented, setConsented] = useState(false);
+  const [consentError, setConsentError] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -77,6 +80,11 @@ export function CustomerRegisterScreen() {
   ];
 
   function handleSendOtp() {
+    if (!consented) {
+      setConsentError(true);
+      return;
+    }
+    setConsentError(false);
     void startEmailOtpSignup();
     setStep(2);
   }
@@ -117,6 +125,11 @@ export function CustomerRegisterScreen() {
             onChangeText={setCustomerEmail}
             keyboardType="email-address"
             placeholder={t('signup.emailPlaceholder')}
+          />
+          <ConsentCheckbox
+            checked={consented}
+            onChange={(v) => { setConsented(v); if (v) setConsentError(false); }}
+            error={consentError}
           />
           <ActionButton label={t('signup.sendOtp')} onPress={handleSendOtp} variant="secondary" />
           <ActionButton label={t('signup.back')} onPress={() => setCustomerView('auth')} variant="danger" />

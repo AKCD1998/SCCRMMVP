@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ActionButton } from '../components/ActionButton';
 import { Field } from '../components/Field';
+import { PrivacyNotice } from '../components/PrivacyNotice';
 import { Section } from '../components/Section';
 import { appConfig } from '../config';
 import { DEMO_EMAIL, DEMO_PASSWORD } from '../constants/keys';
@@ -40,6 +41,7 @@ export function CustomerAuthScreen() {
       <ActionButton label={t('auth.loginButton')} onPress={loginWithEmail} />
       <ActionButton label={t('auth.lineButton')} onPress={() => handleProviderLogin('line')} variant="secondary" />
       <ActionButton label={t('auth.googleButton')} onPress={() => handleProviderLogin('google')} variant="secondary" />
+      <PrivacyNotice context="social" />
       <ActionButton label={t('auth.registerLink')} onPress={() => setCustomerView('register')} variant="accent" />
       {showDemoHint ? (
         <Text style={styles.helper}>
