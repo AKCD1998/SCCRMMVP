@@ -8,6 +8,33 @@ Format: `[date] commit — description`. Newest entries at top.
 
 ## 2026-05-14
 
+### `pending` — Phase 4: connect memberService to real backend API
+
+**What changed**
+
+| File | Change |
+|---|---|
+| `src/services/memberService.ts` | Replaced mock block with real `apiRequest()` calls. Fetches `GET /api/sccrm/customers/:id` and `GET /api/sccrm/points/:id/balance` in parallel. Falls back to deriving member_code from customerId if API omits it (safe default). |
+| `src/types.ts` | Updated `member_code` comment — now always present on all accounts (generated at registration from `users.id`). Stale migration instruction removed. |
+
+**Why**
+
+The backend now has `member_profiles.member_code` populated at user creation. The previous mock
+block in `memberService.ts` always returned `SCM-A1B2C3D4` for every user regardless of who was
+logged in. The real API call returns the actual member code tied to the authenticated user's account.
+
+**Impact**
+
+- Member card modal now shows the real member code, tier, and balance instead of static demo data.
+- `MemberCodeModal`, `CustomerPointsScreen`, and all QR/barcode rendering are unchanged — the
+  ViewModel shape is identical so no UI component needed updating.
+- The mock file `src/mocks/mockMemberData.ts` is no longer imported anywhere. It is kept in the
+  repo as a reference shape in case the API is unreachable during development.
+
+---
+
+### `c47e5d1` — Add full project documentation and update agent/CLAUDE guides
+
 ### `26d6b92` — Phase 2: service layer, CODE128 barcode, structured QR payload, scalable modal
 
 **What changed**

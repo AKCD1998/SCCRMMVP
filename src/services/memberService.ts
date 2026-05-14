@@ -6,24 +6,28 @@
  *                              ↕  HTTP
  *                         SCCRMMVP  (this file — UI client only)
  *
- * This file is the single place to swap mock data for real API calls.
- * No business logic lives here — it only shapes the response into a ViewModel.
+ * Identity:  users.id         = customerId in JWT and all API calls
+ * Loyalty:   member_profiles  = tier, member_code, is_active
+ * History:   point_ledger     = all point transactions
+ *
+ * This file is the single place that bridges the API response to the ViewModel
+ * consumed by MemberCodeModal. No business logic lives here.
  */
 
+import { apiRequest } from '../lib/api';
+import type { Customer } from '../types';
 import type { MemberCardData, MemberCardViewModel, MemberQRPayload } from '../types/memberTypes';
-import { mockMemberCardData } from '../mocks/mockMemberData';
 
 // ─── QR payload builder ────────────────────────────────────────────────────────
-// Kept here (not in the component) so the payload format is versioned in one place.
+// Versioned so the scanner app can evolve the payload format without breaking
+// existing scans. Version 1 = stable member_code only.
 
 function buildQRPayload(memberCode: string): string {
   const payload: MemberQRPayload = {
     type: 'member_card',
     version: 1,
     memberCode,
-    // Future: issuedAt: Date.now(),
-    // Future: expiresAt: Date.now() + 5 * 60 * 1000,
-    // Future: sessionToken fetched from /api/sccrm/members/me/qr-token
+    // Future version 2: add sessionToken + issuedAt + expiresAt for rotating QR
   };
   return JSON.stringify(payload);
 }
@@ -33,22 +37,20 @@ function buildQRPayload(memberCode: string): string {
 const TIER_LABELS: Record<string, string> = {
   bronze: 'Bronze Member',
   silver: 'Silver Member',
-  gold: 'Gold Member',
+  gold:   'Gold Member',
 };
 
 // ─── ViewModel builder ─────────────────────────────────────────────────────────
-// Transforms raw MemberCardData (API shape) → MemberCardViewModel (UI shape).
-// All presentation decisions live here, not in components.
 
 function toViewModel(data: MemberCardData): MemberCardViewModel {
   return {
-    memberCode: data.memberCode,
-    displayName: data.fullName,
-    tier: data.tier,
-    tierLabel: TIER_LABELS[data.tier] ?? data.tier,
-    pointsBalance: data.pointsBalance,
+    memberCode:     data.memberCode,
+    displayName:    data.fullName,
+    tier:           data.tier,
+    tierLabel:      TIER_LABELS[data.tier] ?? data.tier,
+    pointsBalance:  data.pointsBalance,
     lifetimeEarned: data.lifetimeEarned,
-    qrPayload: buildQRPayload(data.memberCode),
+    qrPayload:      buildQRPayload(data.memberCode),
     barcodePayload: data.memberCode,
   };
 }
@@ -56,42 +58,38 @@ function toViewModel(data: MemberCardData): MemberCardViewModel {
 // ─── Public API ────────────────────────────────────────────────────────────────
 
 /**
- * Fetch the member card data for the currently logged-in customer.
+ * Fetch the member card ViewModel for the logged-in customer.
  *
- * TODO — backend integration (when member_code migration is live):
- *   1. Run migration: ALTER TABLE customers ADD COLUMN member_code VARCHAR(50) UNIQUE
- *   2. Backfill:      UPDATE customers SET member_code = 'SCM-' || UPPER(SUBSTRING(id::text,1,8))
- *   3. Update backend route GET /api/sccrm/customers/:id to include member_code in response
- *   4. Update Customer type in src/types.ts: member_code?: string
- *   5. Replace the mock block below with:
+ * Makes two parallel requests:
+ *   GET /api/sccrm/customers/:id  → customer identity + member_code + tier
+ *   GET /api/sccrm/points/:id/balance → points balance + lifetime earned
  *
- *   import { apiRequest } from '../lib/api';
- *   import type { Customer } from '../types';
- *
- *   const [customerRes, balanceRes] = await Promise.all([
- *     apiRequest<{ ok: true; customer: Customer & { member_code: string } }>(
- *       `/api/sccrm/customers/${customerId}`,
- *       { token: accessToken }
- *     ),
- *     apiRequest<{ ok: true; balance: number; lifetimeEarned: number }>(
- *       `/api/sccrm/points/${customerId}/balance`,
- *       { token: accessToken }
- *     ),
- *   ]);
- *   return toViewModel({
- *     memberId: customerRes.customer.id,
- *     memberCode: customerRes.customer.member_code,
- *     fullName: customerRes.customer.full_name ?? '',
- *     tier: customerRes.customer.tier,
- *     pointsBalance: balanceRes.balance,
- *     lifetimeEarned: balanceRes.lifetimeEarned,
- *   });
+ * Both endpoints require the customer's JWT access token.
+ * The result is cached in CustomerPointsScreen local state for the session.
  */
 export async function fetchMemberCard(
-  _customerId: string,
-  _accessToken: string,
+  customerId: string,
+  accessToken: string,
 ): Promise<MemberCardViewModel> {
-  // ── MOCK (remove this block when backend is ready) ──────────────────────────
-  return toViewModel(mockMemberCardData);
-  // ───────────────────────────────────────────────────────────────────────────
+  const [customerRes, balanceRes] = await Promise.all([
+    apiRequest<{ ok: true; customer: Customer & { member_code: string } }>(
+      `/api/sccrm/customers/${customerId}`,
+      { token: accessToken },
+    ),
+    apiRequest<{ ok: true; customerId: string; balance: number; lifetimeEarned: number }>(
+      `/api/sccrm/points/${customerId}/balance`,
+      { token: accessToken },
+    ),
+  ]);
+
+  const memberCode = customerRes.customer.member_code ?? `SCM-${customerId.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+
+  return toViewModel({
+    memberId:       customerRes.customer.id,
+    memberCode,
+    fullName:       customerRes.customer.full_name ?? '',
+    tier:           customerRes.customer.tier,
+    pointsBalance:  balanceRes.balance,
+    lifetimeEarned: balanceRes.lifetimeEarned,
+  });
 }

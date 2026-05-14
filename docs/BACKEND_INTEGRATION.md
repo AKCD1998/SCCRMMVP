@@ -10,16 +10,27 @@ All data flows: `SCCRMMVP` → HTTP → `currentSC-official-website-project` →
 
 ## Current state (as of 2026-05-14)
 
+**Architecture: unified SC Group identity (Option B)**
+
+| Layer | Table | Status |
+|---|---|---|
+| Identity | `users` | ✅ Live — shared with website |
+| Auth links | `user_auth_providers` | ✅ Live — email / LINE / Google |
+| Loyalty | `member_profiles` | ✅ Live — tier, member_code, is_active |
+| History | `point_ledger` | ✅ Live |
+| Staff auth | `staff_devices` | ✅ Live |
+| Promotions | `promotions` | ✅ Live |
+
 | Feature | Frontend status | Backend status |
 |---|---|---|
 | Customer login (email) | ✅ Live | ✅ Live |
 | Customer login (LINE / Google) | ✅ Live | ✅ Live |
 | Points balance display | ✅ Live | ✅ Live — `GET /api/sccrm/points/:id/balance` |
-| Tier display | ✅ Live | ✅ Live — returned in `customer.tier` |
+| Tier display | ✅ Live | ✅ Live — `member_profiles.tier` |
 | Transaction history | ✅ Live | ✅ Live — `GET /api/sccrm/points/:id/history` |
-| Member card modal (QR + barcode) | ✅ UI built, mock data | ❌ `member_code` column not in DB yet |
-| Staff search by member code | ❌ Not built | ❌ Not built |
-| Member card from real API | ❌ Uses mock | ❌ Endpoint not updated yet |
+| Member card modal (QR + barcode) | ✅ Live — real API | ✅ Live — `member_code` in `member_profiles` |
+| Staff search by member code | ❌ Not built in UI | ✅ Live — `GET /api/sccrm/customers/search?member_code=` |
+| Social login (LINE / Google) | ✅ Live | ✅ Live — `user_auth_providers` table |
 
 ---
 
