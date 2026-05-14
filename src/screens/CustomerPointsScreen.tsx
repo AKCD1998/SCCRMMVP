@@ -1,8 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Section } from '../components/Section';
+import { ScanButtonV1 } from '../components/ScanButton';
 import { theme } from '../constants/theme';
 import { useCustomerSession } from '../context/CustomerSessionContext';
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export function CustomerPointsScreen() {
   const { customerBalance, customer, customerLifetimeEarned, tierProgress } = useCustomerSession();
@@ -10,7 +13,11 @@ export function CustomerPointsScreen() {
   if (!customer) return null;
 
   return (
-    <Section title="My Points" subtitle="Current balance plus tier progress.">
+    <Section
+      title="My Points"
+      subtitle="Current balance plus tier progress."
+      headerRight={<ScanButtonV1 />}
+    >
       <Text style={styles.pointsValue}>{customerBalance}</Text>
       <Text style={styles.metricRow}>Tier: {customer.tier}</Text>
       <Text style={styles.metricRow}>Lifetime earned: {customerLifetimeEarned}</Text>
@@ -22,7 +29,10 @@ export function CustomerPointsScreen() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
+  // Points content
   pointsValue: {
     fontSize: 56,
     fontWeight: '900',

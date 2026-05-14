@@ -1,15 +1,15 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Mode } from './src/types/app';
 import { theme } from './src/constants/theme';
+import { CustomerDrawer } from './src/components/CustomerDrawer';
 import { CustomerSessionProvider, useCustomerSession } from './src/context/CustomerSessionContext';
 import { StaffSessionProvider, useStaffSession } from './src/context/StaffSessionContext';
 
 import { CustomerAuthScreen } from './src/screens/CustomerAuthScreen';
 import { CustomerHistoryScreen } from './src/screens/CustomerHistoryScreen';
-import { CustomerNavBar } from './src/screens/CustomerNavBar';
 import { CustomerPointsScreen } from './src/screens/CustomerPointsScreen';
 import { CustomerProfileScreen } from './src/screens/CustomerProfileScreen';
 import { SocialCompleteScreen } from './src/screens/SocialCompleteScreen';
@@ -25,12 +25,39 @@ import { StaffRegisterScreen } from './src/screens/StaffRegisterScreen';
 function AppShell({ mode, message }: { mode: Mode; message: string }) {
   const { customerView, customer } = useCustomerSession();
   const { staffView } = useStaffSession();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const showHamburger =
+    mode === 'customer' &&
+    customer !== null &&
+    customerView !== 'auth' &&
+    customerView !== 'social-complete';
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
+
+      {showHamburger && (
+        <CustomerDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      )}
+
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.brand}>SCCRM</Text>
+        {showHamburger ? (
+          <View style={styles.headerRow}>
+            <Pressable
+              style={styles.hamburger}
+              onPress={() => setDrawerOpen(true)}
+              hitSlop={10}
+            >
+              <View style={styles.bar} />
+              <View style={styles.bar} />
+              <View style={styles.bar} />
+            </Pressable>
+            <Text style={styles.brand}>SCCRM</Text>
+          </View>
+        ) : (
+          <Text style={styles.brand}>SCCRM</Text>
+        )}
         <Text style={styles.brandSubtitle}>Pharmacy CRM MVP for staff speed and customer self-service.</Text>
 
         {message ? <Text style={styles.message}>{message}</Text> : null}
@@ -50,7 +77,6 @@ function AppShell({ mode, message }: { mode: Mode; message: string }) {
         {/* Authenticated customer screens */}
         {mode === 'customer' && customer && customerView !== 'auth' && customerView !== 'social-complete' && (
           <>
-            <CustomerNavBar />
             {customerView === 'points' && <CustomerPointsScreen />}
             {customerView === 'history' && <CustomerHistoryScreen />}
             {customerView === 'profile' && <CustomerProfileScreen />}
@@ -105,6 +131,22 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: theme.colors.textBody,
     fontSize: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  hamburger: {
+    gap: 5,
+    padding: 4,
+    justifyContent: 'center',
+  },
+  bar: {
+    width: 22,
+    height: 2.5,
+    backgroundColor: theme.colors.brand,
+    borderRadius: 2,
   },
   brand: {
     fontSize: 34,

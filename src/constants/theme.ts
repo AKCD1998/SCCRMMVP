@@ -44,6 +44,13 @@ export const theme = {
     success: '#16A34A',
     warning: '#D97706',
     error: '#DC2626',
+
+    // ── Destructive / logout ───────────────────────────────────────────────
+    logoutText: '#991B1B',      // dark red — logout label
+    logoutBg: '#FEF2F2',        // very light red wash — logout section bg
+
+    // ── Tier badge ─────────────────────────────────────────────────────────
+    brandYellowText: '#78350F', // amber-900 — dark text on brandYellow for contrast
   },
 
   radius: {
