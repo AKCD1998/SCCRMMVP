@@ -36,6 +36,17 @@ export interface MemberCardData {
   // lastVisitAt?: string;
 }
 
+// ─── Earn result (returned by recent-earn poll when POS awards points) ───────
+
+export interface EarnResult {
+  earnedPoints: number;
+  totalAmount: number | null;
+  receiptNumber: string | null;
+  newBalance: number;
+  customerName: string;
+  createdAt: string;
+}
+
 // ─── Presentation ViewModel ───────────────────────────────────────────────────
 // What the UI layer receives — ready to render, no raw API types leaking into
 // screens or components.

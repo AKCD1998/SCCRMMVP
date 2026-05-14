@@ -175,22 +175,32 @@ function SectionLabel({ text }: { text: string }) {
 
 // ─── MemberCodeModal ───────────────────────────────────────────────────────────
 
+const BARCODE_PREFIX = 'SCM-POINT-v1-';
+
 interface MemberCodeModalProps {
   visible: boolean;
   onClose: () => void;
   memberCard: MemberCardViewModel | null;
-  // Future props:
-  // isRefreshing?: boolean;
-  // onRefresh?: () => void;
-  // expiresAt?: Date;
-  // isOfflineCached?: boolean;
+  scanToken?: string | null;
+  scanTokenExpiresAt?: Date | null;
+  onRefreshToken?: () => void;
 }
 
 export function MemberCodeModal({
   visible,
   onClose,
   memberCard,
+  scanToken,
+  scanTokenExpiresAt,
+  onRefreshToken,
 }: MemberCodeModalProps) {
+  const barcodePayload = scanToken ? `${BARCODE_PREFIX}${scanToken}` : null;
+
+  const tokenExpired =
+    scanTokenExpiresAt != null && scanTokenExpiresAt.getTime() < Date.now();
+  const tokenMinutesLeft = scanTokenExpiresAt
+    ? Math.max(0, Math.ceil((scanTokenExpiresAt.getTime() - Date.now()) / 60000))
+    : null;
   return (
     <Modal
       visible={visible}
@@ -224,21 +234,30 @@ export function MemberCodeModal({
 
             {/* ── Barcode card ─────────────────────────────────────────── */}
             <View style={styles.card}>
-              <SectionLabel text="BARCODE  ·  CODE128" />
+              <SectionLabel text="BARCODE  ·  CODE128  ·  สแกนสะสมแต้ม" />
               <View style={styles.barcodeArea}>
-                {memberCard ? (
-                  <Code128Barcode payload={memberCard.barcodePayload} height={68} />
+                {barcodePayload ? (
+                  <Code128Barcode payload={barcodePayload} height={68} />
                 ) : (
                   <View style={styles.placeholder} />
                 )}
               </View>
+              {tokenExpired ? (
+                <Pressable style={styles.refreshHint} onPress={onRefreshToken}>
+                  <Text style={styles.refreshHintText}>Token หมดอายุ — แตะเพื่อรีเฟรช</Text>
+                </Pressable>
+              ) : tokenMinutesLeft !== null && tokenMinutesLeft <= 3 ? (
+                <Text style={styles.expiryHint}>หมดอายุใน {tokenMinutesLeft} นาที</Text>
+              ) : null}
             </View>
 
             {/* ── QR card ──────────────────────────────────────────────── */}
             <View style={styles.card}>
-              <SectionLabel text="QR CODE" />
+              <SectionLabel text="QR CODE  ·  สแกนสะสมแต้ม" />
               <View style={styles.qrArea}>
-                {memberCard ? (
+                {barcodePayload ? (
+                  <QRCodeView payload={barcodePayload} cellSize={5} />
+                ) : memberCard ? (
                   <QRCodeView payload={memberCard.qrPayload} cellSize={5} />
                 ) : (
                   <View style={[styles.placeholder, { height: 165, width: 165 }]} />
@@ -349,6 +368,28 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: theme.colors.border,
     borderRadius: 6,
+  },
+  loadingBarcode: {
+    opacity: 0.4,
+  },
+  refreshHint: {
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: theme.colors.error,
+    borderRadius: theme.radius.sm,
+    alignSelf: 'center',
+  },
+  refreshHintText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  expiryHint: {
+    marginTop: 6,
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
   },
   codeBlock: {
     width: '100%',

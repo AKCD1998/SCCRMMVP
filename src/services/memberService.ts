@@ -16,7 +16,7 @@
 
 import { apiRequest } from '../lib/api';
 import type { Customer } from '../types';
-import type { MemberCardData, MemberCardViewModel, MemberQRPayload } from '../types/memberTypes';
+import type { EarnResult, MemberCardData, MemberCardViewModel, MemberQRPayload } from '../types/memberTypes';
 
 // ─── QR payload builder ────────────────────────────────────────────────────────
 // Versioned so the scanner app can evolve the payload format without breaking
@@ -56,6 +56,55 @@ function toViewModel(data: MemberCardData): MemberCardViewModel {
 }
 
 // ─── Public API ────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch a 15-minute HMAC-signed scan token to embed in the member card barcode.
+ * The token is opaque to the mobile app — only the backend can verify it.
+ * POS strips the "SCM-POINT-v1-" prefix and calls /resolve-scan-token.
+ */
+export async function fetchScanToken(
+  accessToken: string,
+): Promise<{ token: string; expiresAt: Date }> {
+  const res = await apiRequest<{ ok: true; token: string; expiresAt: string }>(
+    '/api/sccrm/customers/me/scan-token',
+    { token: accessToken },
+  );
+  return { token: res.token, expiresAt: new Date(res.expiresAt) };
+}
+
+/**
+ * Poll for a recent earn transaction on the given customer.
+ * Returns EarnResult if a purchase earn occurred after `since`, null otherwise.
+ * Mobile app calls this every 3 s while the QR screen is open.
+ */
+export async function pollRecentEarn(
+  customerId: string,
+  accessToken: string,
+  since: Date,
+  customerName: string,
+): Promise<EarnResult | null> {
+  const res = await apiRequest<{
+    ok: true;
+    found: boolean;
+    earnedPoints?: number;
+    totalAmount?: number;
+    receiptNumber?: string | null;
+    createdAt?: string;
+    balance?: number;
+  }>(
+    `/api/sccrm/points/${customerId}/recent-earn?since=${since.toISOString()}`,
+    { token: accessToken },
+  );
+  if (!res.found) return null;
+  return {
+    earnedPoints:  res.earnedPoints!,
+    totalAmount:   res.totalAmount  ?? null,
+    receiptNumber: res.receiptNumber ?? null,
+    newBalance:    res.balance!,
+    customerName,
+    createdAt:     res.createdAt!,
+  };
+}
 
 /**
  * Fetch the member card ViewModel for the logged-in customer.

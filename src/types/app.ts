@@ -1,3 +1,3 @@
 export type Mode = 'gateway' | 'staff' | 'customer';
 export type StaffView = 'auth' | 'home' | 'profile' | 'earn' | 'redeem' | 'register';
-export type CustomerView = 'auth' | 'points' | 'history' | 'profile' | 'social-complete';
+export type CustomerView = 'auth' | 'points' | 'history' | 'profile' | 'social-complete' | 'earnSuccess';
