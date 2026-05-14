@@ -4,74 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { ActionButton } from '../components/ActionButton';
 import { Field } from '../components/Field';
 import { Section } from '../components/Section';
+import { StepIndicator } from '../components/StepIndicator';
 import { theme } from '../constants/theme';
 import { useCustomerSession } from '../context/CustomerSessionContext';
 
 type RegisterStep = 1 | 2 | 3;
-
-// ─── Step indicator ──────────────────────────────────────────────────────────
-
-const siStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 4,
-  },
-  circle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleBlue: {
-    backgroundColor: theme.colors.brand,
-  },
-  line: {
-    flex: 1,
-    height: 2,
-    backgroundColor: theme.colors.border,
-    marginHorizontal: 4,
-  },
-  lineBlue: {
-    backgroundColor: theme.colors.brand,
-  },
-  symbol: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  symbolMuted: {
-    color: theme.colors.textMuted,
-  },
-});
-
-function StepIndicator({ step }: { step: RegisterStep }) {
-  return (
-    <View style={siStyles.row}>
-      {([1, 2, 3] as RegisterStep[]).map((n, idx) => {
-        const done = step > n;
-        const active = step === n;
-        return (
-          <React.Fragment key={n}>
-            {idx > 0 && (
-              <View style={[siStyles.line, done && siStyles.lineBlue]} />
-            )}
-            <View style={[siStyles.circle, (active || done) && siStyles.circleBlue]}>
-              {done ? (
-                <Text style={siStyles.symbol}>✓</Text>
-              ) : (
-                <Text style={[siStyles.symbol, !active && siStyles.symbolMuted]}>{n}</Text>
-              )}
-            </View>
-          </React.Fragment>
-        );
-      })}
-    </View>
-  );
-}
 
 // ─── Password requirement row ─────────────────────────────────────────────────
 
@@ -133,10 +70,10 @@ export function CustomerRegisterScreen() {
   };
 
   const passwordRules = [
-    { met: customerPassword.length >= 2,              text: t('signup.ruleMin2') },
-    { met: /[A-Z]/.test(customerPassword),            text: t('signup.ruleUppercase') },
-    { met: customerPassword.length >= 8,              text: t('signup.ruleMin8') },
-    { met: customerPassword.length > 0 && customerPassword.length <= 32, text: t('signup.ruleMax32') },
+    { met: customerPassword.length >= 2,                                   text: t('signup.ruleMin2') },
+    { met: /[A-Z]/.test(customerPassword),                                 text: t('signup.ruleUppercase') },
+    { met: customerPassword.length >= 8,                                   text: t('signup.ruleMin8') },
+    { met: customerPassword.length > 0 && customerPassword.length <= 32,   text: t('signup.ruleMax32') },
   ];
 
   function handleSendOtp() {
@@ -155,7 +92,7 @@ export function CustomerRegisterScreen() {
 
   return (
     <Section title={t('signup.title')} subtitle={subtitles[step]}>
-      <StepIndicator step={step} />
+      <StepIndicator total={3} current={step} />
 
       {/* ── Step 1: Personal info ── */}
       {step === 1 && (
