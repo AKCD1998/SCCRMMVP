@@ -27,7 +27,7 @@ The repo is not production-ready. It is a thin mobile client that assumes an exi
 - Pure UI components: `src/components/`
 - Screen UI components: `src/screens/` — all screens are now prop-free; they pull from context
 
-There is still no router and no test suite.
+There is no router. A Jest test suite exists for `src/utils/validation.ts` (57 test cases).
 
 ## Folder structure
 
@@ -48,7 +48,10 @@ SCCRMMVP/
     components/
       ActionButton.tsx              Pressable button (primary / secondary / ghost)
       Field.tsx                     Labelled TextInput
-      Section.tsx                   Card-style section wrapper
+      Section.tsx                   Card-style section wrapper (headerRight slot)
+      ScanButton.tsx                ScanButtonV1 (QR icon) + ScanButtonV2 (barcode icon)
+      CustomerDrawer.tsx            Slide-out customer navigation drawer
+      MemberCodeModal.tsx           Member card bottom sheet: CODE128B + QR + selectable text
     context/
       CustomerSessionContext.tsx    Customer state, auth/signup/profile handlers, useCustomerSession()
       StaffSessionContext.tsx       Staff state, device/search/points handlers, useStaffSession()
@@ -71,9 +74,16 @@ SCCRMMVP/
     types.ts                        Customer / points / session data types
     types/
       app.ts                        Mode / StaffView / CustomerView union types
+      memberTypes.ts                MemberQRPayload, MemberCardData, MemberCardViewModel
       base-64.d.ts                  Type support for base-64 package
+    mocks/
+      mockMemberData.ts             MOCK_MEMBER_CODE + mockMemberCardData — swap when backend ready
+    services/
+      memberService.ts              fetchMemberCard() adapter — mock now, real API later
     utils/
       validation.ts                 Compound input validators (no external dependencies)
+    __tests__/
+      validation.test.ts            57 test cases for all validators
 ```
 
 ## State architecture
@@ -366,21 +376,26 @@ The app is in MVP/prototype state.
 What exists:
 
 - Expo shell app configured
-- Single-screen-file implementation for auth, points, staff, profile
+- All screens implemented for auth, points, staff, profile flows
 - SecureStore session persistence
 - API contract assumptions for auth/customers/points
 - EAS build workflow for Android
+- Member card modal (`MemberCodeModal`) with CODE128B barcode + QR code (pure-JS, no native modules)
+- Three-layer service architecture for member card: `types/memberTypes.ts` → `mocks/mockMemberData.ts` → `services/memberService.ts`
+- Jest test suite: 57 test cases for `src/utils/validation.ts`
+- Full documentation: `CHANGELOG.md`, `DECISIONS.md`, `docs/FRONTEND_ARCHITECTURE.md`, `docs/BACKEND_INTEGRATION.md`
 
 What is incomplete:
 
 - No backend in repo
 - No real env configured by default
-- No automated tests
-- No componentization
 - No navigation library
 - No production auth hardening visible from frontend
 - No role/authorization model yet
 - Redeem flow on customer side is placeholder only
+- `member_code` column not yet in backend DB — member card shows mock data (`SCM-A1B2C3D4`)
+- Backend DB migration SQL is documented in `docs/BACKEND_INTEGRATION.md` but not yet applied
+- CODE128B encoder (107-entry table) is not unit-tested
 
 ## Known issues, risks, and fragile areas
 
@@ -445,6 +460,21 @@ Required or likely needed:
   - Google OAuth client id
 
 Do not commit real values.
+
+## Mandatory changelog rule
+
+**Every code change — no matter how small — must add an entry to `CHANGELOG.md` in the same commit.**
+
+Use the template at the bottom of `CHANGELOG.md`. Include:
+- Files changed and what changed in each
+- Why the change was made
+- What breaks if reverted
+
+If fixing a bug, also record: root cause, diagnosis, and why this fix was chosen over alternatives.
+
+Do not batch multiple sessions into one entry. One commit = one entry.
+
+---
 
 ## Coding conventions
 

@@ -26,6 +26,7 @@ These rules apply to the whole repository.
 - `src/constants/keys.ts`: SecureStore key names — changing these invalidates stored user sessions
 - `src/constants/theme.ts`: all design tokens — colors, radii, spacing, shadow; touch here for any visual change
 - `App.tsx`: thin orchestrator; only touch for top-level routing or provider wiring
+- `src/services/memberService.ts`: the seam between mock member data and the real backend; swap the body here when backend ships `member_code`
 - `.github/workflows/eas-build.yml`: deployment/build path
 
 ## File map
@@ -33,13 +34,26 @@ These rules apply to the whole repository.
 | File | Responsibility |
 |------|---------------|
 | `App.tsx` | Root: mounts providers, owns `mode`/`busy`/`message`, routes screens |
-| `src/constants/keys.ts` | SecureStore key names + demo credentials |
+| `src/config.ts` | Env var loader — `appConfig.apiBaseUrl`, `lineChannelId`, etc. |
+| `src/types.ts` | Shared domain types: `Customer`, `Transaction`, `PointHistoryItem`, `Promotion`, `SessionResponse` |
 | `src/types/app.ts` | `Mode`, `StaffView`, `CustomerView` union types |
+| `src/types/memberTypes.ts` | `MemberQRPayload`, `MemberCardData`, `MemberCardViewModel` — member card layer contracts |
+| `src/types/base-64.d.ts` | Type shim for base-64 package |
+| `src/constants/keys.ts` | SecureStore key names + demo credentials |
+| `src/constants/theme.ts` | Design tokens — colors, radius, spacing, card shadow |
+| `src/lib/api.ts` | `apiRequest<T>()` fetch wrapper + `decodeJwtPayload()` |
+| `src/lib/auth.ts` | `startLineLogin()`, `startGoogleLogin()` OAuth helpers |
+| `src/mocks/mockMemberData.ts` | `MOCK_MEMBER_CODE` + `mockMemberCardData` — replace when backend ships `member_code` |
+| `src/services/memberService.ts` | `fetchMemberCard()` adapter — currently returns mock; swap body for real API |
+| `src/utils/validation.ts` | Pure compound validators — no side effects, no external libs |
 | `src/context/CustomerSessionContext.tsx` | All customer state + handlers; `useCustomerSession()` hook |
 | `src/context/StaffSessionContext.tsx` | All staff state + handlers; `useStaffSession()` hook |
 | `src/components/ActionButton.tsx` | Reusable button (primary/secondary/ghost) |
 | `src/components/Field.tsx` | Reusable labelled text input |
-| `src/components/Section.tsx` | Reusable card section wrapper |
+| `src/components/Section.tsx` | Card section wrapper — `headerRight` slot for top-right actions |
+| `src/components/ScanButton.tsx` | `ScanButtonV1` (QR icon) + `ScanButtonV2` (barcode icon) |
+| `src/components/CustomerDrawer.tsx` | Slide-out customer navigation drawer |
+| `src/components/MemberCodeModal.tsx` | Member card bottom sheet: CODE128B barcode + QR + selectable text |
 | `src/screens/StaffAuthScreen.tsx` | Staff PIN login UI |
 | `src/screens/StaffHomeScreen.tsx` | Staff customer search UI |
 | `src/screens/StaffRegisterScreen.tsx` | Staff new-customer form |
@@ -49,11 +63,14 @@ These rules apply to the whole repository.
 | `src/screens/CustomerAuthScreen.tsx` | Customer login + inline signup |
 | `src/screens/SocialCompleteScreen.tsx` | Post-social-login profile completion |
 | `src/screens/CustomerNavBar.tsx` | Customer tab navigation + logout |
-| `src/screens/CustomerPointsScreen.tsx` | Points balance + tier progress |
+| `src/screens/CustomerPointsScreen.tsx` | Points balance + tier progress + member card modal trigger |
 | `src/screens/CustomerHistoryScreen.tsx` | Transaction history list |
 | `src/screens/CustomerProfileScreen.tsx` | Profile edit form |
-| `src/constants/theme.ts` | Design tokens — colors, radius, spacing, card shadow |
-| `src/utils/validation.ts` | Pure compound validators — no side effects, no external libs |
+| `src/__tests__/validation.test.ts` | 57 test cases for all compound validators |
+| `CHANGELOG.md` | Full record of every change — update in every commit |
+| `DECISIONS.md` | Architectural Decision Records (ADR-001 through ADR-008) |
+| `docs/FRONTEND_ARCHITECTURE.md` | Full folder map, data flows, design system, layer responsibilities |
+| `docs/BACKEND_INTEGRATION.md` | Step-by-step guide to connecting the real backend (DB migration, routes, env vars) |
 
 ## Context editing rules
 
