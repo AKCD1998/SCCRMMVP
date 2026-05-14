@@ -42,6 +42,7 @@ export interface EarnResult {
   earnedPoints: number;
   totalAmount: number | null;
   receiptNumber: string | null;
+  branchName: string | null;
   newBalance: number;
   customerName: string;
   createdAt: string;

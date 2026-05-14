@@ -60,6 +60,13 @@ export function EarnSuccessScreen({ earnResult, onBack }: EarnSuccessScreenProps
           </View>
         ) : null}
 
+        {earnResult.branchName ? (
+          <View style={styles.row}>
+            <Text style={styles.label}>สาขา</Text>
+            <Text style={styles.value}>{earnResult.branchName}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.row}>
           <Text style={styles.label}>ยอดซื้อ</Text>
           <Text style={styles.value}>{formatThb(earnResult.totalAmount)}</Text>

@@ -89,6 +89,7 @@ export async function pollRecentEarn(
     earnedPoints?: number;
     totalAmount?: number;
     receiptNumber?: string | null;
+    branchName?: string | null;
     createdAt?: string;
     balance?: number;
   }>(
@@ -100,6 +101,7 @@ export async function pollRecentEarn(
     earnedPoints:  res.earnedPoints!,
     totalAmount:   res.totalAmount  ?? null,
     receiptNumber: res.receiptNumber ?? null,
+    branchName:    res.branchName    ?? null,
     newBalance:    res.balance!,
     customerName,
     createdAt:     res.createdAt!,
