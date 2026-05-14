@@ -1,11 +1,14 @@
 import React from 'react';
 import {
+  Platform,
   Pressable,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { theme } from '../constants/theme';
 import { useLanguage, type SupportedLanguage } from '../context/LanguageContext';
 
@@ -22,6 +25,7 @@ export function LanguageSelectScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ExpoStatusBar style="dark" />
       <View style={styles.container}>
         <Text style={styles.appName}>SCCRM</Text>
 
@@ -36,7 +40,7 @@ export function LanguageSelectScreen() {
             <Pressable
               key={code}
               style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
-              onPress={() => void changeLanguage(code)}
+              onPress={() => changeLanguage(code)}
               accessibilityRole="button"
               accessibilityLabel={label}
             >
@@ -54,12 +58,16 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.colors.pageBackground,
+    // SafeAreaView from react-native doesn't add top padding on Android;
+    // use StatusBar.currentHeight so content never hides under the status bar.
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0,
   },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
+    paddingBottom: 40,
     gap: 16,
   },
   appName: {

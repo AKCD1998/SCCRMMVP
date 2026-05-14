@@ -9,13 +9,13 @@ export type SupportedLanguage = 'th' | 'en';
 interface LanguageContextValue {
   language: SupportedLanguage | null;  // null = first launch, not yet chosen
   languageLoaded: boolean;             // true once AsyncStorage read completes
-  changeLanguage: (lang: SupportedLanguage) => Promise<void>;
+  changeLanguage: (lang: SupportedLanguage) => void;
 }
 
 const LanguageContext = createContext<LanguageContextValue>({
   language: null,
   languageLoaded: false,
-  changeLanguage: async () => {},
+  changeLanguage: () => {},
 });
 
 export function useLanguage() {
@@ -42,10 +42,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       });
   }, []);
 
-  const changeLanguage = useCallback(async (lang: SupportedLanguage) => {
-    await AsyncStorage.setItem(LANGUAGE_KEY, lang);
-    await i18n.changeLanguage(lang);
+  const changeLanguage = useCallback((lang: SupportedLanguage) => {
+    // Update state first — navigation must not depend on async side effects
     setLanguage(lang);
+    void i18n.changeLanguage(lang);
+    void AsyncStorage.setItem(LANGUAGE_KEY, lang).catch(() => {/* non-critical */});
   }, []);
 
   return (

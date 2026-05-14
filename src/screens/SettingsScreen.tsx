@@ -25,7 +25,7 @@ export function SettingsScreen() {
             <Pressable
               key={code}
               style={[styles.langOption, active && styles.langOptionActive]}
-              onPress={() => void changeLanguage(code)}
+              onPress={() => changeLanguage(code)}
               accessibilityRole="button"
               accessibilityLabel={label}
             >
