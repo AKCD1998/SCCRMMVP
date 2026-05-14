@@ -6,13 +6,19 @@ interface SectionProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  rightAction?: React.ReactNode;
 }
 
-export function Section({ title, subtitle, children }: SectionProps) {
+export function Section({ title, subtitle, children, rightAction }: SectionProps) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+      <View style={styles.header}>
+        <View style={styles.headerText}>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+        </View>
+        {rightAction ? <View style={styles.headerAction}>{rightAction}</View> : null}
+      </View>
       {children}
     </View>
   );
@@ -27,6 +33,18 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     gap: theme.spacing.sm,
     ...theme.shadow.card,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  headerText: {
+    flex: 1,
+    gap: 2,
+  },
+  headerAction: {
+    marginLeft: theme.spacing.sm,
   },
   sectionTitle: {
     fontSize: 22,
