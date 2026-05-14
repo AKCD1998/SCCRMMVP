@@ -20,9 +20,21 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   });
 
   const text = await response.text();
-  const payload = text ? JSON.parse(text) : {};
+
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    // Backend returned non-JSON (HTML error page, Render startup page, proxy error).
+    // Surface a readable message instead of crashing with "Unexpected character: <".
+    throw new Error(
+      `Server returned an unexpected response (status ${response.status}). ` +
+      `Check that EXPO_PUBLIC_API_BASE_URL is correct and the backend is running.`
+    );
+  }
+
   if (!response.ok) {
-    throw new Error(payload.error || `Request failed with status ${response.status}`);
+    throw new Error(payload.error as string || `Request failed with status ${response.status}`);
   }
   return payload as T;
 }
