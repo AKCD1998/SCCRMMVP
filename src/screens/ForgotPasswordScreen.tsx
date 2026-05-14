@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ActionButton } from '../components/ActionButton';
 import { Field } from '../components/Field';
+import { PrivacyNotice } from '../components/PrivacyNotice';
 import { Section } from '../components/Section';
 import { StepIndicator } from '../components/StepIndicator';
 import { theme } from '../constants/theme';
@@ -173,6 +174,7 @@ export function ForgotPasswordScreen() {
             keyboardType="email-address"
             placeholder={t('forgotPassword.emailPlaceholder')}
           />
+          <PrivacyNotice context="forgot" />
           <ActionButton
             label={busy ? '...' : t('forgotPassword.sendOtp')}
             onPress={handleSendOtp}
