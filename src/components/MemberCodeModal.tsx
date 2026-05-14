@@ -1,7 +1,6 @@
-import React from 'react';
+import QRCodeLib from 'qrcode';
+import React, { useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
-import Svg, { Rect } from 'react-native-svg';
 import { theme } from '../constants/theme';
 
 // TODO: Replace with real member code fetched from backend.
@@ -11,43 +10,72 @@ import { theme } from '../constants/theme';
 // Database:        https://dashboard.render.com/d/dpg-d5c8t695pdvs73c4qffg-a
 export const MOCK_MEMBER_CODE = 'SCM-POINT-v1-A1B2C3D4';
 
-// Generates a deterministic stripe pattern from any string — purely visual, not encoded.
-// TODO: When connecting to backend, replace this with a real barcode (e.g. Code128) library
-//       such as react-native-barcode-svg, passing the real memberCode value.
-function MockBarcode({ value, width = 280, height = 72 }: { value: string; width?: number; height?: number }) {
-  type Bar = { x: number; w: number; isBar: boolean };
-  const bars: Bar[] = [];
-  let cursor = 0;
+// Pure-View QR code: uses `qrcode` (pure JS, no native modules) to get the
+// module matrix, then renders each dark/light cell as a tiny View.
+function QRCodeView({ value, cellSize = 5 }: { value: string; cellSize?: number }) {
+  const matrix = useMemo<boolean[][]>(() => {
+    try {
+      const qr = QRCodeLib.create(value, { errorCorrectionLevel: 'M' });
+      const { data, size } = qr.modules;
+      const rows: boolean[][] = [];
+      for (let r = 0; r < size; r++) {
+        const row: boolean[] = [];
+        for (let c = 0; c < size; c++) {
+          row.push(Boolean(data[r * size + c]));
+        }
+        rows.push(row);
+      }
+      return rows;
+    } catch {
+      return [];
+    }
+  }, [value]);
+
+  if (matrix.length === 0) return <View style={{ width: cellSize * 33, height: cellSize * 33 }} />;
+
+  const dim = matrix.length * cellSize;
+  return (
+    <View style={{ width: dim, height: dim, backgroundColor: '#FFFFFF' }}>
+      {matrix.map((row, r) => (
+        <View key={r} style={{ flexDirection: 'row' }}>
+          {row.map((dark, c) => (
+            <View
+              key={c}
+              style={{
+                width: cellSize,
+                height: cellSize,
+                backgroundColor: dark ? theme.colors.textHeading : '#FFFFFF',
+              }}
+            />
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// Deterministic stripe pattern from any string — purely visual, not encoded.
+// TODO: When connecting to backend, swap for a real Code128 barcode renderer
+//       once the real memberCode is available from the backend.
+function MockBarcode({ value, width = 272, height = 72 }: { value: string; width?: number; height?: number }) {
+  type Stripe = { flex: number; dark: boolean };
+  const stripes: Stripe[] = [];
 
   for (let i = 0; i < value.length; i++) {
     const c = value.charCodeAt(i);
-    const barW = 2 + (c % 5);
-    const gapW = 1 + ((c >> 2) % 4);
-    bars.push({ x: cursor, w: barW, isBar: true });
-    cursor += barW;
-    bars.push({ x: cursor, w: gapW, isBar: false });
-    cursor += gapW;
+    stripes.push({ flex: 2 + (c % 5), dark: true });
+    stripes.push({ flex: 1 + ((c >> 2) % 4), dark: false });
   }
 
-  // Add quiet zone markers at start and end
-  const scale = (width - 8) / cursor;
-  const offsetX = 4;
-
   return (
-    <Svg width={width} height={height}>
-      {bars
-        .filter(b => b.isBar)
-        .map((bar, i) => (
-          <Rect
-            key={i}
-            x={offsetX + bar.x * scale}
-            y={0}
-            width={Math.max(1, bar.w * scale)}
-            height={height}
-            fill={theme.colors.textHeading}
-          />
-        ))}
-    </Svg>
+    <View style={{ width, height, flexDirection: 'row', overflow: 'hidden' }}>
+      {stripes.map((s, i) => (
+        <View
+          key={i}
+          style={{ flex: s.flex, height, backgroundColor: s.dark ? theme.colors.textHeading : '#FFFFFF' }}
+        />
+      ))}
+    </View>
   );
 }
 
@@ -78,23 +106,17 @@ export function MemberCodeModal({ visible, onClose, memberCode = MOCK_MEMBER_COD
             <Text style={styles.title}>Member Code</Text>
             <Text style={styles.subtitle}>Show this to staff to scan</Text>
 
-            <View style={styles.barcodeCard}>
+            <View style={styles.card}>
               <Text style={styles.sectionLabel}>BARCODE</Text>
               <View style={styles.barcodeArea}>
-                <MockBarcode value={memberCode} width={272} height={72} />
+                <MockBarcode value={memberCode} />
               </View>
             </View>
 
-            <View style={styles.qrCard}>
+            <View style={styles.card}>
               <Text style={styles.sectionLabel}>QR CODE</Text>
               <View style={styles.qrArea}>
-                {/* react-native-qrcode-svg generates a real scannable QR matrix */}
-                <QRCode
-                  value={memberCode}
-                  size={180}
-                  color={theme.colors.textHeading}
-                  backgroundColor={theme.colors.cardBackground}
-                />
+                <QRCodeView value={memberCode} cellSize={5} />
               </View>
             </View>
 
@@ -152,7 +174,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 8,
   },
-  barcodeCard: {
+  card: {
     width: '100%',
     backgroundColor: theme.colors.cardBackground,
     borderRadius: theme.radius.lg,
@@ -166,20 +188,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-  },
-  qrCard: {
-    width: '100%',
-    backgroundColor: theme.colors.cardBackground,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-    ...theme.shadow.card,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
   },
   qrArea: {
-    padding: 12,
-    backgroundColor: theme.colors.cardBackground,
+    padding: 8,
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
   },
   codeTextContainer: {
