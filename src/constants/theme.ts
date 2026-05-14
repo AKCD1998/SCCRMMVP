@@ -35,6 +35,8 @@ export const theme = {
     secondaryText: '#0B1FB8',
     ghostBorder: '#C7D2FE',    // indigo-200
     ghostText: '#0B1FB8',
+    accentYellowBg: '#FFF3CD', // warm cream — register / accent CTA
+    accentYellowText: '#7A4500', // dark amber — text on accentYellow
 
     // ── Status banner ──────────────────────────────────────────────────────
     messageBg: '#EEF2FF',      // indigo-50

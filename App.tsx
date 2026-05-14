@@ -16,6 +16,8 @@ import { CustomerAuthScreen } from './src/screens/CustomerAuthScreen';
 import { CustomerHistoryScreen } from './src/screens/CustomerHistoryScreen';
 import { CustomerPointsScreen } from './src/screens/CustomerPointsScreen';
 import { CustomerProfileScreen } from './src/screens/CustomerProfileScreen';
+import { CustomerRegisterScreen } from './src/screens/CustomerRegisterScreen';
+import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
 import { LanguageSelectScreen } from './src/screens/LanguageSelectScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { SocialCompleteScreen } from './src/screens/SocialCompleteScreen';
@@ -38,6 +40,8 @@ function AppShell({ mode, message }: { mode: Mode; message: string }) {
     mode === 'customer' &&
     customer !== null &&
     customerView !== 'auth' &&
+    customerView !== 'register' &&
+    customerView !== 'forgot-password' &&
     customerView !== 'social-complete';
 
   return (
@@ -79,6 +83,8 @@ function AppShell({ mode, message }: { mode: Mode; message: string }) {
 
         {/* Customer auth screens */}
         {mode === 'customer' && customerView === 'auth'            && <CustomerAuthScreen />}
+        {mode === 'customer' && customerView === 'register'        && <CustomerRegisterScreen />}
+        {mode === 'customer' && customerView === 'forgot-password' && <ForgotPasswordScreen />}
         {mode === 'customer' && customerView === 'social-complete' && <SocialCompleteScreen />}
 
         {/* Authenticated customer screens */}

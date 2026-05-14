@@ -6,7 +6,7 @@ interface ActionButtonProps {
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'accent' | 'danger';
 }
 
 export function ActionButton({ label, onPress, disabled, variant = 'primary' }: ActionButtonProps) {
@@ -18,6 +18,8 @@ export function ActionButton({ label, onPress, disabled, variant = 'primary' }: 
         styles.button,
         variant === 'secondary' && styles.buttonSecondary,
         variant === 'ghost' && styles.buttonGhost,
+        variant === 'accent' && styles.buttonAccent,
+        variant === 'danger' && styles.buttonDanger,
         disabled && styles.buttonDisabled,
       ]}
     >
@@ -26,6 +28,8 @@ export function ActionButton({ label, onPress, disabled, variant = 'primary' }: 
           styles.buttonText,
           variant === 'secondary' && styles.buttonTextSecondary,
           variant === 'ghost' && styles.buttonTextGhost,
+          variant === 'accent' && styles.buttonTextAccent,
+          variant === 'danger' && styles.buttonTextDanger,
         ]}
       >
         {label}
@@ -50,6 +54,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.ghostBorder,
   },
+  buttonAccent: {
+    backgroundColor: theme.colors.accentYellowBg,
+    borderRadius: 14,
+  },
+  buttonDanger: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: theme.colors.error,
+  },
   buttonDisabled: {
     opacity: 0.45,
   },
@@ -63,5 +76,12 @@ const styles = StyleSheet.create({
   },
   buttonTextGhost: {
     color: theme.colors.ghostText,
+  },
+  buttonTextAccent: {
+    color: theme.colors.accentYellowText,
+    fontWeight: '600',
+  },
+  buttonTextDanger: {
+    color: theme.colors.error,
   },
 });
