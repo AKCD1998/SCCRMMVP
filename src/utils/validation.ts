@@ -49,17 +49,15 @@ export function validateEmailSignup(
   return null;
 }
 
-export function validateSocialSignup(
-  phone: string,
-  name: string,
-  email: string,
-  password: string
-): string | null {
+// MVP: social signup only requires phone. Name and email come from the provider
+// and are pre-filled / shown as read-only. Password is optional for social accounts
+// (users re-authenticate via LINE / Google each time).
+//
+// TODO (Profile Settings — future): when formal account linking is added, expand
+// this to validate any additional fields collected during the linking flow.
+export function validateSocialSignup(phone: string): string | null {
   if (!isRequired(phone)) return 'Phone number is required.';
   if (!isValidThaiPhone(phone)) return 'Please enter a valid Thai phone number (e.g. 0812345678).';
-  if (!isRequired(name)) return 'Full name is required.';
-  if (isRequired(email) && !isValidEmail(email)) return 'Please enter a valid email address.';
-  if (!isRequired(password)) return 'Password is required.';
   return null;
 }
 

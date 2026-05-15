@@ -98,34 +98,24 @@ describe('validateEmailSignup', () => {
 });
 
 // ─── validateSocialSignup ────────────────────────────────────────────────────
+// MVP: phone-only. Name/email come from the provider; password is not required
+// for social accounts. Future account-linking fields validated separately.
 
 describe('validateSocialSignup', () => {
-  it('returns null for valid inputs with email', () => {
-    expect(validateSocialSignup('0812345678', 'Jane', 'jane@example.com', 'pass1')).toBeNull();
+  it('returns null for a valid Thai phone number', () => {
+    expect(validateSocialSignup('0812345678')).toBeNull();
   });
 
-  it('returns null when email is omitted (optional for social signup)', () => {
-    expect(validateSocialSignup('0812345678', 'Jane', '', 'pass1')).toBeNull();
+  it('returns null for phone with spaces/dashes (stripped)', () => {
+    expect(validateSocialSignup('081-234-5678')).toBeNull();
   });
 
   it('rejects empty phone', () => {
-    expect(validateSocialSignup('', 'Jane', '', 'pass1')).toBe('Phone number is required.');
+    expect(validateSocialSignup('')).toBe('Phone number is required.');
   });
 
   it('rejects invalid phone format', () => {
-    expect(validateSocialSignup('555', 'Jane', '', 'pass1')).toBe('Please enter a valid Thai phone number (e.g. 0812345678).');
-  });
-
-  it('rejects empty name', () => {
-    expect(validateSocialSignup('0812345678', '', '', 'pass1')).toBe('Full name is required.');
-  });
-
-  it('rejects malformed email when one is provided', () => {
-    expect(validateSocialSignup('0812345678', 'Jane', 'notvalid', 'pass1')).toBe('Please enter a valid email address.');
-  });
-
-  it('rejects empty password', () => {
-    expect(validateSocialSignup('0812345678', 'Jane', '', '')).toBe('Password is required.');
+    expect(validateSocialSignup('555')).toBe('Please enter a valid Thai phone number (e.g. 0812345678).');
   });
 });
 

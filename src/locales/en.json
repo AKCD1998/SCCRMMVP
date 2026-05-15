@@ -123,12 +123,12 @@
     "save": "Save Profile"
   },
   "social": {
-    "title": "Complete Social Signup",
-    "subtitle": "Phone is required before your account is created.",
-    "fullName": "Full Name",
+    "title": "One More Step",
+    "subtitle": "We got your name and email from the provider. Just add your phone number to finish.",
+    "fullName": "Name",
     "email": "Email",
-    "phone": "Phone",
-    "password": "Set Password",
+    "phone": "Phone Number",
+    "phonePlaceholder": "Enter your phone number",
     "finish": "Finish Signup",
     "backToLogin": "Back to Login"
   },

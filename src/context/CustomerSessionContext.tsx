@@ -306,7 +306,12 @@ export function CustomerSessionProvider({
 
   async function completeSocialSignup() {
     if (!customerOnboardingToken) return;
-    const err = validateSocialSignup(customerPhone, customerName, customerEmail, customerPassword);
+    // MVP: only phone is collected from the user. Name and email are pre-filled
+    // from the provider (LINE / Google) and passed through automatically.
+    // Password is omitted — social accounts re-authenticate via the provider.
+    // TODO (Profile Settings — future): allow user to set a password after signup
+    // so they can also log in via email if desired.
+    const err = validateSocialSignup(customerPhone);
     if (err) { setMessage(err); return; }
     setBusy(true);
     try {
@@ -316,9 +321,9 @@ export function CustomerSessionProvider({
           step: 'complete-social-signup',
           onboardingToken: customerOnboardingToken,
           phone: customerPhone,
-          fullName: customerName,
-          email: customerEmail,
-          password: customerPassword,
+          fullName: customerName,   // pre-filled from provider
+          email: customerEmail,     // pre-filled from provider
+          // password intentionally omitted for social signup
           deviceLabel: 'expo-social',
         },
       });
