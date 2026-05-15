@@ -231,32 +231,27 @@ export function CustomerSessionProvider({
   async function handleProviderLogin(provider: 'line' | 'google') {
     setBusy(true);
     try {
-      const code = provider === 'line' ? await startLineLogin() : await startGoogleLogin();
-      const response = await apiRequest<
-        | (SessionResponse & { onboardingRequired: false })
-        | {
-            ok: true;
-            onboardingRequired: true;
-            onboardingToken: string;
-            profile: { fullName?: string | null; email?: string | null };
-          }
-      >(`/api/sccrm/auth/${provider}-callback`, {
-        method: 'POST',
-        body: { code, deviceLabel: `expo-${provider}` },
-      });
+      // Backend redirect flow: provider → backend GET /callback → sccrm://oauth?params
+      // auth.ts opens the browser; backend does code exchange and redirects to deep link.
+      const params = provider === 'line' ? await startLineLogin() : await startGoogleLogin();
 
-      if ('onboardingRequired' in response && response.onboardingRequired) {
-        setCustomerOnboardingToken(response.onboardingToken);
-        setCustomerName(response.profile.fullName || '');
-        setCustomerEmail(response.profile.email || '');
+      if (params.get('onboardingRequired') === 'true') {
+        setCustomerOnboardingToken(params.get('onboardingToken') || '');
+        setCustomerName(params.get('fullName') || '');
+        setCustomerEmail(params.get('email') || '');
         setCustomerView('social-complete');
         setMode('customer');
         setMessage('Finish your profile to complete signup.');
         return;
       }
 
-      await persistCustomerSession(response);
-      await hydrateCustomerFromToken(response.accessToken);
+      const accessToken = params.get('accessToken');
+      const refreshToken = params.get('refreshToken');
+      if (!accessToken || !refreshToken) {
+        throw new Error('Login failed — no tokens returned.');
+      }
+      await persistCustomerSession({ accessToken, refreshToken, customer: null });
+      await hydrateCustomerFromToken(accessToken);
       setMessage('Logged in.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Social login failed.');
